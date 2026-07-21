@@ -16,6 +16,8 @@ import type { RootScreenProps } from '../../types/navigation';
 import { createSessionId } from '../../utils/id';
 import { isTime } from '../../utils/validation';
 
+type Errors = Partial<Record<'query' | 'arrivalTime' | 'departureTime', string>>;
+
 export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>) {
   const { planId, nextOrderIndex } = route.params;
   const sessionToken = useMemo(createSessionId, []);
@@ -30,6 +32,8 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
   const [selecting, setSelecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [completedQuery, setCompletedQuery] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Errors>({});
   const detailsRequestGeneration = useRef<number>(0);
   const mountedRef = useRef<boolean>(true);
 
@@ -55,9 +59,15 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
       setSearchError(null);
       try {
         const result = await placeService.autocomplete(trimmed, sessionToken);
-        if (active) setSuggestions(result);
+        if (active) {
+          setSuggestions(result);
+          setCompletedQuery(trimmed);
+        }
       } catch (error) {
-        if (active) setSearchError(getErrorMessage(error));
+        if (active) {
+          setCompletedQuery(null);
+          setSearchError(getErrorMessage(error));
+        }
       } finally {
         if (active) setSearching(false);
       }
@@ -80,6 +90,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
       setQuery(details.name);
       setAddress(details.address);
       setSuggestions([]);
+      setCompletedQuery(null);
     } catch (error) {
       if (!mountedRef.current || generation !== detailsRequestGeneration.current) return;
       setSearchError(getErrorMessage(error));
@@ -91,14 +102,17 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
   }
 
   async function submit() {
-    if (!query.trim()) {
-      Alert.alert('Add a place name', 'Search for a place or enter a name manually.');
-      return;
-    }
-    if (!isTime(arrivalTime) || !isTime(departureTime) || departureTime <= arrivalTime) {
-      Alert.alert('Check the schedule', 'Use 24-hour HH:mm times and leave after you arrive.');
-      return;
-    }
+    const nextErrors: Errors = {
+      query: !query.trim() ? 'Search for a place or enter a name manually.' : undefined,
+      arrivalTime: !isTime(arrivalTime) ? 'Use 24-hour HH:mm.' : undefined,
+      departureTime: !isTime(departureTime)
+        ? 'Use 24-hour HH:mm.'
+        : isTime(arrivalTime) && departureTime <= arrivalTime
+          ? 'Leave after you arrive.'
+          : undefined,
+    };
+    setErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
 
     setSubmitting(true);
     try {
@@ -130,72 +144,135 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
   function updateQuery(value: string) {
     detailsRequestGeneration.current += 1;
     setSelecting(false);
+    setCompletedQuery(null);
+    setErrors((current) => ({ ...current, query: undefined }));
     if (selectedPlace && value !== selectedPlace.name) setSelectedPlace(null);
     setQuery(value);
   }
 
+  const showNoResults = completedQuery === query.trim()
+    && query.trim().length >= 2
+    && !searching
+    && !selecting
+    && !selectedPlace
+    && !searchError
+    && suggestions.length === 0;
+
   return (
     <Screen safeTop={false}>
       <ScreenIntro
-        icon="location-outline"
+        scene="place"
         subtitle="Search the live place catalog, or enter a simple stop manually."
-        title="Add a place"
+        title="Pin the next stop"
       />
-      <AppInput autoCapitalize="words" icon="search-outline" label="Place" onChangeText={updateQuery} placeholder="Search cafes, landmarks, hotels…" value={query} />
-      {searching || selecting ? <ActivityIndicator accessibilityLabel={selecting ? 'Opening place' : 'Searching places'} color={colors.primary} /> : null}
-      {searchError ? <Text accessibilityLiveRegion="polite" style={styles.searchError}>{searchError} You can still add this stop manually.</Text> : null}
+      <AppInput editable={!submitting} autoCapitalize="words" error={errors.query} icon="search-outline" label="Place" onChangeText={updateQuery} placeholder="Search cafes, landmarks, hotels…" value={query} />
+      {searching || selecting ? (
+        <View accessibilityLabel={selecting ? 'Opening place' : 'Searching places'} accessibilityLiveRegion="polite" accessibilityState={{ busy: true }} style={styles.searching}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={styles.searchingText}>{selecting ? 'Opening that place…' : 'Looking around the map…'}</Text>
+        </View>
+      ) : null}
+      {searchError ? (
+        <View accessibilityLiveRegion="polite" style={styles.searchErrorCard}>
+          <Ionicons color={colors.warning} name="cloud-offline-outline" size={22} />
+          <Text style={styles.searchError}>{searchError} You can still add this stop manually.</Text>
+        </View>
+      ) : null}
       {suggestions.length ? (
-        <View style={styles.results}>
+        <View accessibilityLabel="Place suggestions" style={styles.results}>
+          <View style={styles.resultsHeading}>
+            <Ionicons color={colors.accent} name="map-outline" size={18} />
+            <Text style={styles.resultsTitle}>Places on the map</Text>
+          </View>
           {suggestions.map((suggestion) => (
             <Pressable
               accessibilityLabel={`${suggestion.name}. ${suggestion.address || suggestion.fullText}`}
               accessibilityRole="button"
-              accessibilityState={{ busy: selecting }}
+              accessibilityState={{ busy: selecting, disabled: selecting }}
               disabled={selecting}
               key={suggestion.providerPlaceId}
               onPress={() => void selectSuggestion(suggestion)}
               style={({ pressed }) => [styles.result, pressed && styles.pressed]}
             >
-              <View style={styles.resultIcon}><Ionicons color={colors.primary} name="location-outline" size={20} /></View>
+              <View style={styles.resultIcon}><Ionicons color={colors.primary} name="location" size={20} /></View>
               <View style={styles.resultCopy}>
                 <Text numberOfLines={1} style={styles.resultName}>{suggestion.name}</Text>
                 <Text numberOfLines={2} style={styles.resultAddress}>{suggestion.address || suggestion.fullText}</Text>
               </View>
+              <Ionicons color={colors.textMuted} name="arrow-forward" size={18} />
             </Pressable>
           ))}
         </View>
       ) : null}
-      {selectedPlace ? (
-        <View accessibilityLiveRegion="polite" style={styles.selected}>
-          <Ionicons color={colors.success} name="checkmark-circle" size={22} />
-          <View style={styles.selectedCopy}>
-            <Text style={styles.selectedTitle}>Place matched</Text>
-            <Text style={styles.selectedMeta}>{selectedPlace.rating ? `★ ${selectedPlace.rating} · ` : ''}{selectedPlace.address}</Text>
+      {showNoResults ? (
+        <View accessibilityLiveRegion="polite" style={styles.noResults}>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.noResultsIcon}>
+            <Ionicons color={colors.primary} name="trail-sign-outline" size={24} />
+          </View>
+          <View style={styles.noResultsCopy}>
+            <Text style={styles.noResultsTitle}>No exact match nearby</Text>
+            <Text style={styles.noResultsText}>Keep the name you typed and add the address manually below.</Text>
           </View>
         </View>
       ) : null}
-      <AppInput label="Address" onChangeText={setAddress} placeholder="Optional for manual stops" value={address} />
-      <ResponsiveFieldRow>
-        <AppInput keyboardType="numbers-and-punctuation" label="Arrive" onChangeText={setArrivalTime} placeholder="10:00" value={arrivalTime} />
-        <AppInput keyboardType="numbers-and-punctuation" label="Leave" onChangeText={setDepartureTime} placeholder="11:00" value={departureTime} />
-      </ResponsiveFieldRow>
-      <AppInput label="Note" maxLength={500} multiline onChangeText={setNote} placeholder="Tickets, reservation, what to order…" value={note} />
+      {selectedPlace ? (
+        <View accessibilityLabel={`${selectedPlace.name} matched from the place catalog`} accessibilityLiveRegion="polite" style={styles.selected}>
+          <View style={styles.selectedStamp}><Ionicons color={colors.success} name="checkmark" size={22} /></View>
+          <View style={styles.selectedCopy}>
+            <Text style={styles.selectedTitle}>Place matched</Text>
+            {selectedPlace.rating ? (
+              <View style={styles.ratingRow}>
+                <Ionicons color={colors.warning} name="star" size={14} />
+                <Text style={styles.selectedMeta}>{selectedPlace.rating}</Text>
+              </View>
+            ) : null}
+            <Text style={styles.selectedMeta}>{selectedPlace.address}</Text>
+          </View>
+        </View>
+      ) : null}
+      <View style={styles.detailsCard}>
+        <View style={styles.detailsHeading}>
+          <Ionicons color={colors.primary} name="create-outline" size={19} />
+          <Text accessibilityRole="header" style={styles.detailsTitle}>Stop details</Text>
+        </View>
+        <AppInput editable={!submitting} label="Address" onChangeText={setAddress} placeholder="Optional for manual stops" value={address} />
+        <ResponsiveFieldRow>
+          <AppInput editable={!submitting} error={errors.arrivalTime} keyboardType="numbers-and-punctuation" label="Arrive" onChangeText={(value) => { setArrivalTime(value); setErrors((current) => ({ ...current, arrivalTime: undefined })); }} placeholder="10:00" value={arrivalTime} />
+          <AppInput editable={!submitting} error={errors.departureTime} keyboardType="numbers-and-punctuation" label="Leave" onChangeText={(value) => { setDepartureTime(value); setErrors((current) => ({ ...current, departureTime: undefined })); }} placeholder="11:00" value={departureTime} />
+        </ResponsiveFieldRow>
+        <AppInput editable={!submitting} label="Note" maxLength={500} multiline onChangeText={setNote} placeholder="Tickets, reservation, what to order…" value={note} />
+      </View>
       <AppButton label="Add to itinerary" loading={submitting} onPress={() => void submit()} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  detailsCard: { backgroundColor: colors.surfaceWarm, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, gap: spacing.lg, padding: spacing.lg },
+  detailsHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  detailsTitle: { color: colors.text, fontSize: typography.heading, fontWeight: '900' },
+  noResults: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryBorder, borderRadius: radius.md, borderStyle: 'dashed', borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  noResultsCopy: { flex: 1, gap: spacing.xs },
+  noResultsIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, height: 44, justifyContent: 'center', width: 44 },
+  noResultsText: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
+  noResultsTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900' },
   pressed: { opacity: 0.7 },
-  result: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  ratingRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  result: { alignItems: 'center', borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: spacing.md, minHeight: 68, padding: spacing.md },
   resultAddress: { color: colors.textMuted, fontSize: typography.caption, lineHeight: 17 },
   resultCopy: { flex: 1, gap: 2 },
-  resultIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.sm, height: 38, justifyContent: 'center', width: 38 },
+  resultIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.stickerOutline, borderRadius: radius.sm, borderWidth: 2, height: 42, justifyContent: 'center', width: 42 },
   resultName: { color: colors.text, fontSize: typography.small, fontWeight: '800' },
-  results: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, overflow: 'hidden', ...shadows },
-  searchError: { color: colors.warningText, fontSize: typography.small, lineHeight: 20 },
-  selected: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  results: { backgroundColor: colors.surfaceWarm, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, overflow: 'hidden', ...shadows },
+  resultsHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  resultsTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900' },
+  searchError: { color: colors.warningText, flex: 1, fontSize: typography.small, lineHeight: 20 },
+  searchErrorCard: { alignItems: 'center', backgroundColor: colors.warningSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  searching: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', minHeight: 44 },
+  searchingText: { color: colors.text, fontSize: typography.small, fontWeight: '700' },
+  selected: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.stickerOutline, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   selectedCopy: { flex: 1, gap: 2 },
   selectedMeta: { color: colors.textMuted, fontSize: typography.caption },
+  selectedStamp: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.success, borderRadius: radius.pill, borderStyle: 'dashed', borderWidth: 2, height: 46, justifyContent: 'center', width: 46 },
   selectedTitle: { color: colors.successText, fontSize: typography.small, fontWeight: '800' },
 });

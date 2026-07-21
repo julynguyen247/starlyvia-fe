@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AppButton } from '../../components/AppButton';
 import { Avatar } from '../../components/Avatar';
 import { GroupCard } from '../../components/GroupCard';
 import { PlayfulHero } from '../../components/PlayfulHero';
@@ -19,6 +20,12 @@ import { colors, radius, spacing, typography } from '../../theme/tokens';
 import type { Group, Plan } from '../../types/api';
 import type { TabScreenProps } from '../../types/navigation';
 
+function safeErrorMessage(error: unknown): string {
+  return error instanceof TypeError
+    ? "We couldn't reach Starlyvia. Check your connection and try again."
+    : getErrorMessage(error);
+}
+
 export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   const { user } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -27,35 +34,94 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const hasLoadedGroups = useRef(false);
+  const loadRequestId = useRef(0);
 
   const load = useCallback(async (asRefresh = false) => {
-    asRefresh ? setRefreshing(true) : setLoading(true);
+    const requestId = ++loadRequestId.current;
+    if (asRefresh) {
+      setRefreshing(true);
+    } else if (!hasLoadedGroups.current) {
+      setLoading(true);
+    }
     setError(null);
+    setWarning(null);
     try {
-      const [groupList, unread] = await Promise.all([
+      const [groupsResult, unreadResult] = await Promise.allSettled([
         groupService.list(),
         notificationService.unreadCount(),
       ]);
+      if (requestId !== loadRequestId.current) return;
+
+      const notices: string[] = [];
+      if (unreadResult.status === 'fulfilled') {
+        setUnreadCount(unreadResult.value.count);
+      } else {
+        notices.push("Notifications couldn't refresh, so the unread count may be out of date.");
+      }
+
+      if (groupsResult.status === 'rejected') {
+        setError(safeErrorMessage(groupsResult.reason));
+        if (hasLoadedGroups.current) {
+          notices.unshift("Travel circles couldn't refresh. Your saved results are still shown.");
+        }
+        setWarning(notices.join(' '));
+        return;
+      }
+
+      const groupList = groupsResult.value;
+      hasLoadedGroups.current = true;
       setGroups(groupList);
-      setUnreadCount(unread.count);
+
+      if (!groupList.length) {
+        setPlans([]);
+        setWarning(notices.length ? notices.join(' ') : null);
+        return;
+      }
 
       const planResults = await Promise.allSettled(
         groupList.map((group) => planService.listByGroup(group.id)),
       );
-      const allPlans = planResults.flatMap((result) =>
+      if (requestId !== loadRequestId.current) return;
+      const freshPlans = planResults.flatMap((result) =>
         result.status === 'fulfilled' ? result.value : [],
       );
-      setPlans(
-        allPlans
+      const failedGroupIds = new Set<string>();
+      planResults.forEach((result, index) => {
+        const group = groupList[index];
+        if (result.status === 'rejected' && group) failedGroupIds.add(group.id);
+      });
+
+      setPlans((currentPlans) => {
+        const retainedPlans = currentPlans.filter(
+          (plan) => plan.groupId && failedGroupIds.has(plan.groupId),
+        );
+        const uniquePlans = new Map(
+          [...freshPlans, ...retainedPlans].map((plan) => [plan.id, plan]),
+        );
+
+        return [...uniquePlans.values()]
           .filter((plan) => plan.status !== 'CANCELLED')
           .sort((left, right) => left.planStartDate.localeCompare(right.planStartDate))
-          .slice(0, 3),
-      );
+          .slice(0, 3);
+      });
+
+      if (failedGroupIds.size) {
+        notices.push(
+          failedGroupIds.size === groupList.length
+            ? "Itineraries couldn't refresh. Saved results may be out of date."
+            : "Some itineraries couldn't refresh. Available and saved results are still shown.",
+        );
+      }
+      setWarning(notices.length ? notices.join(' ') : null);
     } catch (loadError) {
-      setError(getErrorMessage(loadError));
+      if (requestId === loadRequestId.current) setError(safeErrorMessage(loadError));
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (requestId === loadRequestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
@@ -66,11 +132,29 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   );
 
   if (loading) {
-    return <StateView loading title="Finding your next adventure…" />;
+    return (
+      <StateView
+        kind="loading"
+        loading
+        presentation="screen"
+        scene="itinerary"
+        title="Finding your next adventure…"
+      />
+    );
   }
 
   if (error && !groups.length) {
-    return <StateView actionLabel="Try again" message={error} onAction={() => void load()} title="Could not load home" />;
+    return (
+      <StateView
+        actionLabel="Try again"
+        icon="cloud-offline-outline"
+        kind="error"
+        message={error}
+        onAction={() => void load()}
+        presentation="screen"
+        title="Your travel world is taking a break"
+      />
+    );
   }
 
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
@@ -95,17 +179,73 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
         <Avatar name={user?.username ?? 'Explorer'} size={46} uri={user?.avatarUrl} />
       </View>
 
-      <PlayfulHero eyebrow="YOUR TRAVEL UNIVERSE" title="Where will your crew go next?">
-        <Pressable
-          accessibilityLabel="Start a travel circle"
-          accessibilityRole="button"
+      {warning ? (
+        <View accessibilityLiveRegion="polite" style={styles.warning}>
+          <Ionicons color={colors.warningText} name="warning-outline" size={22} />
+          <View style={styles.warningCopy}>
+            <Text style={styles.warningTitle}>A few updates are delayed</Text>
+            <Text style={styles.warningText}>{warning}</Text>
+          </View>
+          <AppButton
+            compact
+            label="Refresh"
+            onPress={() => void load(true)}
+            style={styles.warningAction}
+            variant="ghost"
+          />
+        </View>
+      ) : null}
+
+      <PlayfulHero
+        description="Gather your favorite people, then turn ideas into an itinerary."
+        eyebrow="YOUR TRAVEL UNIVERSE"
+        scene="crew"
+        title="Where will your crew go next?"
+      >
+        <AppButton
+          compact
+          icon="add"
+          label="Start a travel circle"
           onPress={() => navigation.navigate('CreateGroup')}
           style={styles.heroAction}
-        >
-          <Ionicons color={colors.primaryDark} name="add" size={20} />
-          <Text style={styles.heroActionText}>Start a travel circle</Text>
-        </Pressable>
+        />
       </PlayfulHero>
+
+      <View accessibilityLabel="Quick actions" style={styles.quickActions}>
+        <Pressable
+          accessibilityLabel="Create a new travel circle"
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('CreateGroup')}
+          style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
+        >
+          <View style={[styles.quickIcon, styles.quickIconOrange]}>
+            <Ionicons color={colors.onPrimary} name="add" size={23} />
+          </View>
+          <Text numberOfLines={2} style={styles.quickLabel}>New circle</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel="Open travel invitations"
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('Invitations')}
+          style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
+        >
+          <View style={[styles.quickIcon, styles.quickIconGreen]}>
+            <Ionicons color={colors.accentText} name="ticket" size={22} />
+          </View>
+          <Text numberOfLines={2} style={styles.quickLabel}>Invitations</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel="Browse travel circles"
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('Groups')}
+          style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
+        >
+          <View style={[styles.quickIcon, styles.quickIconDark]}>
+            <Ionicons color={colors.heroText} name="compass" size={22} />
+          </View>
+          <Text numberOfLines={2} style={styles.quickLabel}>Browse trips</Text>
+        </Pressable>
+      </View>
 
       <SectionHeader
         actionLabel="See all"
@@ -123,23 +263,33 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
       ) : (
         <StateView
           actionLabel="Create your first group"
-          icon="people-outline"
           message="Bring friends or family together before building an itinerary."
           onAction={() => navigation.navigate('CreateGroup')}
+          scene="crew"
           title="No travel circles yet"
         />
       )}
 
-      {plans.length ? (
+      {groups.length ? (
         <>
           <SectionHeader title="Coming up" />
-          {plans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              onPress={() => navigation.navigate('PlanDetail', { planId: plan.id })}
-              plan={plan}
+          {plans.length ? (
+            plans.map((plan) => (
+              <PlanCard
+                key={plan.id}
+                onPress={() => navigation.navigate('PlanDetail', { planId: plan.id })}
+                plan={plan}
+              />
+            ))
+          ) : (
+            <StateView
+              actionLabel="Choose a travel circle"
+              message="Your upcoming itineraries will gather here once the first plan takes shape."
+              onAction={() => navigation.navigate('Groups')}
+              scene="itinerary"
+              title="No adventures on the calendar"
             />
-          ))}
+          )}
         </>
       ) : null}
     </Screen>
@@ -151,23 +301,15 @@ const styles = StyleSheet.create({
   greeting: { flex: 1, gap: 2 },
   header: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   heroAction: {
-    alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.white,
-    borderRadius: radius.pill,
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    minHeight: 44,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
   },
-  heroActionText: { color: colors.primaryDark, fontSize: typography.small, fontWeight: '800' },
   name: { color: colors.text, fontSize: typography.heading, fontWeight: '900' },
   notificationButton: {
     alignItems: 'center',
     backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: radius.md,
+    borderWidth: 1,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -183,4 +325,39 @@ const styles = StyleSheet.create({
     top: 8,
     width: 10,
   },
+  quickAction: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceWarm,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flex: 1,
+    gap: spacing.sm,
+    minHeight: 112,
+    minWidth: 92,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  quickActionPressed: { opacity: 0.86, transform: [{ translateY: 2 }, { scale: 0.97 }] },
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  quickIcon: { alignItems: 'center', borderRadius: radius.pill, height: 52, justifyContent: 'center', width: 52 },
+  quickIconDark: { backgroundColor: colors.primaryDark },
+  quickIconGreen: { backgroundColor: colors.accentSoft, borderColor: colors.accent, borderWidth: 2 },
+  quickIconOrange: { backgroundColor: colors.primary },
+  quickLabel: { color: colors.text, fontSize: typography.caption, fontWeight: '900', textAlign: 'center' },
+  warning: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.warningSoft,
+    borderColor: colors.warning,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  warningAction: { alignSelf: 'center' },
+  warningCopy: { flex: 1, gap: spacing.xs, minWidth: 180 },
+  warningText: { color: colors.warningText, fontSize: typography.small, lineHeight: 20 },
+  warningTitle: { color: colors.warningText, fontSize: typography.small, fontWeight: '800' },
 });

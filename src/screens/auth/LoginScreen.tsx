@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
@@ -16,8 +16,12 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   async function submit() {
+    if (isSubmitting) return;
+
+    setRequestError(null);
     const nextErrors = {
       email: !isEmail(email) ? 'Enter a valid email address.' : undefined,
       password: !password ? 'Enter your password.' : undefined,
@@ -28,12 +32,20 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     try {
       await signIn({ email: email.trim().toLowerCase(), password });
     } catch (error) {
-      Alert.alert('Could not sign in', getErrorMessage(error));
+      setRequestError(
+        error instanceof TypeError
+          ? "We couldn't reach Starlyvia. Check your connection and try again."
+          : getErrorMessage(error),
+      );
     }
   }
 
   return (
-    <AuthShell title="Plan farther. Together." subtitle="Sign in to pick up your next adventure.">
+    <AuthShell
+      requestError={requestError}
+      title="Plan farther. Together."
+      subtitle="Sign in to pick up your next adventure."
+    >
       <AppInput
         autoCapitalize="none"
         autoComplete="email"
@@ -41,7 +53,10 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
         icon="mail-outline"
         keyboardType="email-address"
         label="Email"
-        onChangeText={setEmail}
+        onChangeText={(value) => {
+          setEmail(value);
+          setRequestError(null);
+        }}
         onSubmitEditing={() => passwordRef.current?.focus()}
         placeholder="you@example.com"
         returnKeyType="next"
@@ -53,7 +68,10 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
         error={errors.password}
         icon="lock-closed-outline"
         label="Password"
-        onChangeText={setPassword}
+        onChangeText={(value) => {
+          setPassword(value);
+          setRequestError(null);
+        }}
         onSubmitEditing={() => void submit()}
         placeholder="Your password"
         returnKeyType="done"

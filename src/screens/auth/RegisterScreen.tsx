@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
@@ -20,8 +20,12 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Errors>({});
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   async function submit() {
+    if (isSubmitting) return;
+
+    setRequestError(null);
     const nextErrors: Errors = {
       username: username.trim().length < 2 ? 'Use at least 2 characters.' : undefined,
       email: !isEmail(email) ? 'Enter a valid email address.' : undefined,
@@ -37,19 +41,30 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         username: username.trim(),
       });
     } catch (error) {
-      Alert.alert('Could not create account', getErrorMessage(error));
+      setRequestError(
+        error instanceof TypeError
+          ? "We couldn't reach Starlyvia. Check your connection and try again."
+          : getErrorMessage(error),
+      );
     }
   }
 
   return (
-    <AuthShell title="Your next story starts here." subtitle="Create an account and bring the right people along.">
+    <AuthShell
+      requestError={requestError}
+      title="Your next story starts here."
+      subtitle="Create an account and bring the right people along."
+    >
       <AppInput
         autoCapitalize="words"
         autoComplete="name"
         error={errors.username}
         icon="person-outline"
         label="Name"
-        onChangeText={setUsername}
+        onChangeText={(value) => {
+          setUsername(value);
+          setRequestError(null);
+        }}
         onSubmitEditing={() => emailRef.current?.focus()}
         placeholder="How friends know you"
         returnKeyType="next"
@@ -63,7 +78,10 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         icon="mail-outline"
         keyboardType="email-address"
         label="Email"
-        onChangeText={setEmail}
+        onChangeText={(value) => {
+          setEmail(value);
+          setRequestError(null);
+        }}
         onSubmitEditing={() => passwordRef.current?.focus()}
         placeholder="you@example.com"
         returnKeyType="next"
@@ -75,7 +93,10 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         error={errors.password}
         icon="lock-closed-outline"
         label="Password"
-        onChangeText={setPassword}
+        onChangeText={(value) => {
+          setPassword(value);
+          setRequestError(null);
+        }}
         onSubmitEditing={() => void submit()}
         placeholder="At least 8 characters"
         returnKeyType="done"
