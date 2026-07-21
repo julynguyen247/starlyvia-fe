@@ -4,10 +4,13 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppButton } from '../../components/AppButton';
+import { DreamyBackdrop } from '../../components/DreamyBackdrop';
+import { ScreenIntro } from '../../components/ScreenIntro';
 import { StateView } from '../../components/StateView';
 import { getErrorMessage } from '../../services/apiClient';
 import { notificationService } from '../../services/notificationService';
-import { colors, radius, spacing, typography } from '../../theme/tokens';
+import { colors, radius, spacing, stickerPalette, typography } from '../../theme/tokens';
 import type { Notification } from '../../types/api';
 import { relativeTime } from '../../utils/format';
 
@@ -21,6 +24,16 @@ const typeIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   USER_REGISTERED: 'sparkles-outline',
 };
 
+const typeColors: Record<string, string> = {
+  GROUP_INVITATION_CREATED: stickerPalette.orange,
+  GROUP_MEMBER_ADDED: stickerPalette.green,
+  GROUP_MEMBER_REMOVED: stickerPalette.coral,
+  PLAN_CREATED: stickerPalette.blue,
+  PLAN_UPDATED: stickerPalette.yellow,
+  PLAN_DELETED: stickerPalette.coral,
+  USER_REGISTERED: stickerPalette.violet,
+};
+
 export function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<Notification[]>([]);
@@ -30,6 +43,10 @@ export function NotificationsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paginationError, setPaginationError] = useState<string | null>(null);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [announcement, setAnnouncement] = useState<string | null>(null);
   const requestGeneration = useRef<number>(0);
   const baseLoadingRef = useRef<boolean>(false);
   const loadingMoreRef = useRef<boolean>(false);
@@ -41,6 +58,7 @@ export function NotificationsScreen() {
     setLoadingMore(false);
     asRefresh ? setRefreshing(true) : setLoading(true);
     setError(null);
+    setPaginationError(null);
     try {
       const result = await notificationService.list(0);
       if (generation !== requestGeneration.current) return;
@@ -68,11 +86,12 @@ export function NotificationsScreen() {
     };
   }, [load]));
 
-  async function loadMore() {
-    if (!hasMore || baseLoadingRef.current || loadingMoreRef.current || loading || refreshing) return;
+  async function loadMore(forceRetry = false) {
+    if (!hasMore || baseLoadingRef.current || loadingMoreRef.current || loading || refreshing || markingAllRead || markingId !== null || (paginationError && !forceRetry)) return;
     const generation = requestGeneration.current;
     loadingMoreRef.current = true;
     setLoadingMore(true);
+    setPaginationError(null);
     try {
       const nextPage = page + 1;
       const result = await notificationService.list(nextPage);
@@ -85,7 +104,7 @@ export function NotificationsScreen() {
       setHasMore(!result.last);
     } catch (loadError) {
       if (generation !== requestGeneration.current) return;
-      setError(getErrorMessage(loadError));
+      setPaginationError(getErrorMessage(loadError));
     } finally {
       if (generation === requestGeneration.current) {
         loadingMoreRef.current = false;
@@ -95,83 +114,141 @@ export function NotificationsScreen() {
   }
 
   async function markRead(notification: Notification) {
-    if (notification.status === 'READ') return;
+    if (notification.status === 'READ' || markingId !== null || markingAllRead || refreshing || loadingMore) return;
+    setMarkingId(notification.id);
+    setError(null);
     setItems((current) => current.map((item) => item.id === notification.id ? { ...item, status: 'READ' } : item));
     try {
       const updated = await notificationService.markRead(notification.id);
       setItems((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setAnnouncement(`${notification.title} marked as read.`);
     } catch (markError) {
       setItems((current) => current.map((item) => item.id === notification.id ? notification : item));
       setError(getErrorMessage(markError));
+    } finally {
+      setMarkingId(null);
     }
   }
 
   async function markAllRead() {
+    if (markingAllRead || markingId !== null || refreshing || loadingMore || !items.some((item) => item.status === 'UNREAD')) return;
     const previous = items;
+    setMarkingAllRead(true);
+    setError(null);
     setItems((current) => current.map((item) => ({ ...item, status: 'READ' })));
     try {
       await notificationService.markAllRead();
+      setAnnouncement('All updates marked as read.');
     } catch (markError) {
       setItems(previous);
       setError(getErrorMessage(markError));
+    } finally {
+      setMarkingAllRead(false);
     }
   }
 
-  if (loading) return <StateView loading title="Checking for updates…" />;
+  if (loading) return <StateView loading presentation="screen" scene="invitation" title="Checking for updates…" />;
   if (error && !items.length) {
     return (
       <StateView
         actionLabel="Try again"
         icon="cloud-offline-outline"
+        kind="offline"
         message={error}
         onAction={() => void load()}
+        presentation="screen"
+        scene="invitation"
         title="Could not load updates"
       />
     );
   }
 
+  const unreadCount = items.filter((item) => item.status === 'UNREAD').length;
+
   return (
     <View style={[styles.page, { paddingTop: Math.max(insets.top, spacing.lg) }]}>
+      <DreamyBackdrop />
       <View style={styles.header}>
-        <View style={styles.headingCopy}>
-          <Text accessibilityRole="header" style={styles.title}>Updates</Text>
-          <Text style={styles.subtitle}>Everything your travel circles are doing.</Text>
+        <ScreenIntro
+          scene="invitation"
+          subtitle="Fresh notes from your travel circles, all in one friendly stack."
+          title="Travel updates"
+        />
+        <View style={styles.unreadSummary}>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.unreadSignal} />
+          <View style={styles.unreadCopy}>
+            <Text style={styles.unreadCount}>{unreadCount}</Text>
+            <Text style={styles.unreadLabel}>{unreadCount === 1 ? 'unread update' : 'unread updates'}</Text>
+          </View>
+          {unreadCount ? (
+            <AppButton
+              compact
+              disabled={markingId !== null || refreshing || loadingMore}
+              label="Read all"
+              loading={markingAllRead}
+              onPress={() => void markAllRead()}
+              variant="secondary"
+            />
+          ) : (
+            <View style={styles.caughtUp}>
+              <Ionicons color={colors.success} name="checkmark-circle" size={18} />
+              <Text style={styles.caughtUpText}>Caught up</Text>
+            </View>
+          )}
         </View>
-        {items.some((item) => item.status === 'UNREAD') ? (
-          <Pressable accessibilityLabel="Mark all notifications as read" accessibilityRole="button" onPress={() => void markAllRead()} style={styles.markAllButton}>
-            <Text style={styles.markAll}>Read all</Text>
-          </Pressable>
-        ) : null}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {announcement ? <Text accessibilityLiveRegion="polite" style={styles.srAnnouncement}>{announcement}</Text> : null}
+      {error ? (
+        <View accessibilityLiveRegion="polite" style={styles.errorBanner}>
+          <Ionicons color={colors.danger} name="alert-circle-outline" size={20} />
+          <Text style={styles.error}>{error}</Text>
+        </View>
+      ) : null}
       <FlatList
         contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom, spacing.xl) }]}
         data={items}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <StateView icon="notifications-outline" message="New group and itinerary activity will appear here." title="You're all caught up" />
+          <StateView icon="notifications-outline" message="New group and itinerary activity will appear here." title="Your postcard tray is clear" />
         }
-        ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.primary} style={styles.footerLoader} /> : null}
+        ListFooterComponent={loadingMore ? (
+          <ActivityIndicator accessibilityLabel="Loading more updates" color={colors.primary} style={styles.footerLoader} />
+        ) : paginationError ? (
+          <View accessibilityLiveRegion="polite" style={styles.paginationError}>
+            <Text style={styles.paginationErrorText}>More updates could not be loaded. {paginationError}</Text>
+            <AppButton compact label="Try again" onPress={() => void loadMore(true)} variant="ghost" />
+          </View>
+        ) : null}
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.4}
-        onRefresh={() => void load(true)}
+        onRefresh={markingAllRead || markingId !== null ? undefined : () => void load(true)}
         refreshing={refreshing}
         renderItem={({ item }) => (
           <Pressable
             accessibilityLabel={`${item.title}. ${item.status === 'UNREAD' ? 'Unread' : 'Read'}. ${item.message}`}
             accessibilityRole="button"
-            accessibilityState={{ disabled: item.status === 'READ' }}
-            disabled={item.status === 'READ'}
+            accessibilityState={{ busy: markingId === item.id, disabled: item.status === 'READ' || markingAllRead || markingId !== null }}
+            disabled={item.status === 'READ' || markingAllRead || markingId !== null}
             onPress={() => void markRead(item)}
-            style={({ pressed }) => [styles.item, item.status === 'UNREAD' && styles.itemUnread, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.item,
+              { borderLeftColor: typeColors[item.type] ?? stickerPalette.orange },
+              item.status === 'UNREAD' && styles.itemUnread,
+              pressed && styles.pressed,
+            ]}
           >
-            <View style={[styles.itemIcon, item.status === 'UNREAD' && styles.itemIconUnread]}>
-              <Ionicons color={colors.primary} name={typeIcons[item.type] ?? 'notifications-outline'} size={22} />
+            <View style={[styles.itemIcon, { backgroundColor: typeColors[item.type] ?? stickerPalette.orange }]}>
+              <Ionicons color={colors.onSticker} name={typeIcons[item.type] ?? 'notifications-outline'} size={22} />
             </View>
             <View style={styles.itemCopy}>
               <View style={styles.itemHeading}>
                 <Text numberOfLines={1} style={styles.itemTitle}>{item.title}</Text>
-                {item.status === 'UNREAD' ? <View style={styles.unreadDot} /> : null}
+                {item.status === 'UNREAD' ? (
+                  <View style={styles.newBadge}>
+                    <View style={styles.unreadDot} />
+                    <Text style={styles.newBadgeText}>NEW</Text>
+                  </View>
+                ) : null}
               </View>
               <Text numberOfLines={3} style={styles.message}>{item.message}</Text>
               <Text style={styles.time}>{relativeTime(item.createdAt)}</Text>
@@ -185,25 +262,32 @@ export function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  error: { color: colors.danger, fontSize: typography.small, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  caughtUp: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  caughtUpText: { color: colors.successText, fontSize: typography.caption, fontWeight: '900' },
+  error: { color: colors.dangerText, flex: 1, fontSize: typography.small, lineHeight: 20 },
+  errorBanner: { alignItems: 'center', backgroundColor: colors.dangerSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.md, padding: spacing.md },
   footerLoader: { padding: spacing.xl },
-  header: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between', paddingHorizontal: spacing.lg },
-  headingCopy: { flex: 1, gap: spacing.xs },
-  item: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  header: { gap: spacing.lg, paddingHorizontal: spacing.lg },
+  item: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, borderLeftWidth: 6, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   itemCopy: { flex: 1, gap: spacing.xs },
   itemHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
-  itemIcon: { alignItems: 'center', backgroundColor: colors.surfaceMuted, borderRadius: radius.md, height: 44, justifyContent: 'center', width: 44 },
-  itemIconUnread: { backgroundColor: colors.primarySoft },
+  itemIcon: { alignItems: 'center', borderRadius: radius.md, height: 44, justifyContent: 'center', width: 44 },
   itemTitle: { color: colors.text, flex: 1, fontSize: typography.body, fontWeight: '800' },
-  itemUnread: { borderColor: colors.primaryBorder },
+  itemUnread: { backgroundColor: colors.surfaceWarm, borderColor: colors.primaryBorder },
   list: { flexGrow: 1, gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
-  markAll: { color: colors.primary, fontSize: typography.small, fontWeight: '800' },
-  markAllButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingHorizontal: spacing.sm },
   message: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
+  newBadge: { alignItems: 'center', backgroundColor: colors.accentSoft, borderRadius: radius.pill, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  newBadgeText: { color: colors.accentText, fontSize: typography.caption, fontWeight: '900', letterSpacing: 0.5 },
   page: { backgroundColor: colors.background, flex: 1 },
+  paginationError: { alignItems: 'center', gap: spacing.md, padding: spacing.xl },
+  paginationErrorText: { color: colors.warningText, fontSize: typography.small, lineHeight: 20, textAlign: 'center' },
   pressed: { opacity: 0.75 },
-  subtitle: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
+  srAnnouncement: { height: 1, opacity: 0, position: 'absolute', width: 1 },
   time: { color: colors.textMuted, fontSize: typography.caption, fontWeight: '600', marginTop: spacing.xs },
-  title: { color: colors.text, fontSize: typography.title, fontWeight: '900', letterSpacing: -0.6 },
   unreadDot: { backgroundColor: colors.accent, borderRadius: 4, height: 8, width: 8 },
+  unreadCopy: { flex: 1, gap: 2 },
+  unreadCount: { color: colors.primary, fontSize: typography.heading, fontWeight: '900' },
+  unreadLabel: { color: colors.textMuted, fontSize: typography.caption, fontWeight: '700' },
+  unreadSignal: { backgroundColor: colors.accent, borderColor: colors.stickerOutline, borderRadius: radius.pill, borderWidth: 3, height: 18, width: 18 },
+  unreadSummary: { alignItems: 'center', backgroundColor: colors.surfaceWarm, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.md },
 });

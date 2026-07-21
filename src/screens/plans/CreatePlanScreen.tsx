@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
@@ -70,27 +71,60 @@ export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreateP
 
   return (
     <Screen safeTop={false}>
-      <View style={styles.groupPill}><Text style={styles.groupPillText}>Planning with {groupName}</Text></View>
+      <View accessibilityLabel={`Planning with ${groupName}`} accessible style={styles.groupTicket}>
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={styles.ticketIcon}
+        >
+          <Ionicons color={colors.accent} name="ticket-outline" size={20} />
+        </View>
+        <View style={styles.ticketCopy}>
+          <Text style={styles.ticketEyebrow}>TRAVEL CIRCLE</Text>
+          <Text style={styles.ticketName}>{groupName}</Text>
+        </View>
+      </View>
       <ScreenIntro
-        icon="map-outline"
+        scene="itinerary"
         subtitle="Start with the when and why. Add places after saving."
         title="Shape the next adventure."
       />
-      <AppInput error={errors.name} label="Itinerary name" maxLength={100} onChangeText={setName} placeholder="A day in Da Nang" value={name} />
-      <AppInput error={errors.description} label="Description" maxLength={500} multiline onChangeText={setDescription} placeholder="Beaches, food, and a little room to wander." value={description} />
-      <ResponsiveFieldRow>
-        <AppInput error={errors.startDate} keyboardType="numbers-and-punctuation" label="Start date" onChangeText={setStartDate} placeholder="YYYY-MM-DD" value={startDate} />
-        <AppInput error={errors.endDate} keyboardType="numbers-and-punctuation" label="End date" onChangeText={setEndDate} placeholder="YYYY-MM-DD" value={endDate} />
-      </ResponsiveFieldRow>
-      <ResponsiveFieldRow>
-        <AppInput error={errors.startTime} keyboardType="numbers-and-punctuation" label="Start time" onChangeText={setStartTime} placeholder="09:00" value={startTime} />
-        <AppInput error={errors.endTime} keyboardType="numbers-and-punctuation" label="End time" onChangeText={setEndTime} placeholder="18:00" value={endTime} />
-      </ResponsiveFieldRow>
-      <View style={styles.statusField}>
-        <Text style={styles.label}>Plan status</Text>
-        <View style={styles.chips}>
-          <Chip label="Draft" onPress={() => setStatus('DRAFT')} selected={status === 'DRAFT'} />
-          <Chip label="Ready to go" onPress={() => setStatus('PLANNED')} selected={status === 'PLANNED'} />
+      <View style={styles.formCard}>
+        <View style={styles.sectionHeading}>
+          <Ionicons color={colors.primary} name="sparkles-outline" size={19} />
+          <Text accessibilityRole="header" style={styles.sectionTitle}>Trip basics</Text>
+        </View>
+        <AppInput editable={!submitting} error={errors.name} label="Itinerary name" maxLength={100} onChangeText={setName} placeholder="A day in Da Nang" value={name} />
+        <AppInput editable={!submitting} error={errors.description} label="Description" maxLength={500} multiline onChangeText={setDescription} placeholder="Beaches, food, and a little room to wander." value={description} />
+      </View>
+
+      <View style={styles.formCard}>
+        <View style={styles.sectionHeading}>
+          <Ionicons color={colors.primary} name="calendar-outline" size={19} />
+          <Text accessibilityRole="header" style={styles.sectionTitle}>Dates and times</Text>
+        </View>
+        <ResponsiveFieldRow>
+          <AppInput editable={!submitting} error={errors.startDate} keyboardType="numbers-and-punctuation" label="Start date" onChangeText={setStartDate} placeholder="YYYY-MM-DD" value={startDate} />
+          <AppInput editable={!submitting} error={errors.endDate} keyboardType="numbers-and-punctuation" label="End date" onChangeText={setEndDate} placeholder="YYYY-MM-DD" value={endDate} />
+        </ResponsiveFieldRow>
+        <ResponsiveFieldRow>
+          <AppInput editable={!submitting} error={errors.startTime} keyboardType="numbers-and-punctuation" label="Start time" onChangeText={setStartTime} placeholder="09:00" value={startTime} />
+          <AppInput editable={!submitting} error={errors.endTime} keyboardType="numbers-and-punctuation" label="End time" onChangeText={setEndTime} placeholder="18:00" value={endTime} />
+        </ResponsiveFieldRow>
+      </View>
+
+      <View style={styles.formCard}>
+        <View style={styles.sectionHeading}>
+          <Ionicons color={colors.primary} name="flag-outline" size={19} />
+          <Text accessibilityRole="header" style={styles.sectionTitle}>Ready when you are</Text>
+        </View>
+        <Text style={styles.sectionCopy}>Keep it flexible as a draft, or let the group know the plan is ready.</Text>
+        <View style={styles.statusField}>
+          <Text style={styles.label}>Plan status</Text>
+          <View style={styles.chips}>
+            <Chip label="Draft" onPress={() => setStatus('DRAFT')} selected={status === 'DRAFT'} />
+            <Chip label="Ready to go" onPress={() => setStatus('PLANNED')} selected={status === 'PLANNED'} />
+          </View>
         </View>
       </View>
       <AppButton label="Save and add places" loading={submitting} onPress={() => void submit()} />
@@ -100,8 +134,15 @@ export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreateP
 
 const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  groupPill: { alignSelf: 'flex-start', backgroundColor: colors.primarySoft, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  groupPillText: { color: colors.primaryDark, fontSize: typography.caption, fontWeight: '800' },
+  formCard: { backgroundColor: colors.surfaceWarm, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, gap: spacing.lg, padding: spacing.lg },
+  groupTicket: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.accentSoft, borderColor: colors.stickerOutline, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   label: { color: colors.text, fontSize: typography.small, fontWeight: '700' },
+  sectionCopy: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
+  sectionHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  sectionTitle: { color: colors.text, fontSize: typography.heading, fontWeight: '900' },
   statusField: { gap: spacing.sm },
+  ticketCopy: { flex: 1, gap: 2 },
+  ticketEyebrow: { color: colors.accentText, fontSize: typography.caption, fontWeight: '900', letterSpacing: 1 },
+  ticketIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, height: 44, justifyContent: 'center', width: 44 },
+  ticketName: { color: colors.text, fontSize: typography.body, fontWeight: '900' },
 });

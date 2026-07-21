@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { StyleSheet, View } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import { CreateGroupScreen } from '../screens/groups/CreateGroupScreen';
@@ -36,18 +37,24 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.heroTextSubtle,
         tabBarHideOnKeyboard: true,
         tabBarIcon: ({ color, focused, size }) => (
-          <Ionicons color={color} name={focused ? tabIcons[route.name].active : tabIcons[route.name].inactive} size={size} />
+          <View style={[styles.tabIcon, focused && styles.tabIconFocused]}>
+            <Ionicons
+              color={focused ? colors.onPrimary : color}
+              name={focused ? tabIcons[route.name].active : tabIcons[route.name].inactive}
+              size={Math.min(size, 21)}
+            />
+          </View>
         ),
         tabBarLabelStyle: { fontSize: typography.caption, fontWeight: '700' },
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          minHeight: 64,
-          paddingBottom: 7,
-          paddingTop: 7,
+          backgroundColor: colors.primaryDark,
+          borderTopColor: colors.primaryDark,
+          borderTopWidth: 1,
+          minHeight: 72,
+          paddingTop: 6,
         },
       })}
     >
@@ -79,7 +86,7 @@ export function RootNavigator() {
         contentStyle: { backgroundColor: colors.background },
         headerBackButtonDisplayMode: 'minimal',
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: colors.background },
+        headerStyle: { backgroundColor: colors.surfaceWarm },
         headerTintColor: colors.text,
         headerTitleStyle: { fontSize: typography.body, fontWeight: '800' },
       }}
@@ -94,3 +101,18 @@ export function RootNavigator() {
     </RootStack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 34,
+    justifyContent: 'center',
+    width: 42,
+  },
+  tabIconFocused: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    borderWidth: 1,
+  },
+});
