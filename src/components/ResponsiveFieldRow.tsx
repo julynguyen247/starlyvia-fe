@@ -8,8 +8,8 @@ type Props = { children: ReactNode };
 const STACK_BREAKPOINT = 390;
 
 export function ResponsiveFieldRow({ children }: Props) {
-  const { width } = useWindowDimensions();
-  const stacked = width < STACK_BREAKPOINT;
+  const { fontScale, width } = useWindowDimensions();
+  const stacked = width < STACK_BREAKPOINT || fontScale >= 1.3;
 
   return (
     <View style={[styles.row, stacked && styles.stacked]}>

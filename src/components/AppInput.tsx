@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -30,15 +30,25 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
     accessibilityHint,
     accessibilityLabel,
     editable = true,
+    onBlur,
+    onFocus,
     ...props
   },
   ref,
 ) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={[styles.wrapper, containerStyle]}>
       <Text style={styles.label}>{label}</Text>
-      <View style={[styles.inputShell, error && styles.inputError, multiline && styles.multilineShell]}>
-        {icon ? <Ionicons color={colors.textMuted} name={icon} size={20} /> : null}
+      <View style={[
+        styles.inputShell,
+        focused && styles.inputFocused,
+        error && styles.inputError,
+        !editable && styles.inputDisabled,
+        multiline && styles.multilineShell,
+      ]}>
+        {icon ? <Ionicons color={error ? colors.danger : focused ? colors.primary : colors.textMuted} name={icon} size={20} /> : null}
         <TextInput
           accessibilityHint={error ?? accessibilityHint}
           accessibilityLabel={accessibilityLabel ?? label}
@@ -46,6 +56,14 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
           editable={editable}
           ref={ref}
           multiline={multiline}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
           placeholderTextColor={colors.textMuted}
           style={[styles.input, multiline && styles.multilineInput, style]}
           {...props}
@@ -66,12 +84,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   inputError: { borderColor: colors.danger },
+  inputDisabled: { backgroundColor: colors.surfaceMuted },
+  inputFocused: { borderColor: colors.primary },
   inputShell: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceWarm,
+    borderColor: colors.controlBorder,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 2,
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
