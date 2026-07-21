@@ -4,10 +4,13 @@
     "slug": "starlyvia",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "scheme": "starlyvia",
+    "icon": "./assets/app-icon.png",
     "splash": {
-      "backgroundColor": "#F7F5F2"
+      "image": "./assets/illustrations/launch-mark.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0C1511"
     },
     "ios": {
       "supportsTablet": true,
@@ -15,9 +18,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#312E81"
+        "foregroundImage": "./assets/illustrations/launch-mark.png",
+        "backgroundColor": "#142019"
       },
       "package": "com.starlyvia.mobile"
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#0C1511",
+      "barStyle": "light-content"
     },
     "plugins": [
       "expo-secure-store"

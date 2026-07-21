@@ -25,7 +25,7 @@ export function Chip({ label, selected = false, onPress, tone = 'neutral' }: Pro
   }[tone];
   const content = (
     <>
-      {selected ? <Ionicons color={colors.heroText} name="checkmark" size={15} /> : null}
+      {selected ? <Ionicons color={colors.onPrimary} name="checkmark" size={15} /> : null}
       <Text style={[styles.label, toneLabelStyle, selected && styles.selectedLabel]}>{label}</Text>
     </>
   );
@@ -57,6 +57,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     alignItems: 'center',
     borderRadius: radius.pill,
+    borderColor: colors.stickerOutline,
+    borderWidth: 2,
     flexDirection: 'row',
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -70,7 +72,7 @@ const styles = StyleSheet.create({
   neutralLabel: { color: colors.textMuted },
   pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   selected: { backgroundColor: colors.primary },
-  selectedLabel: { color: colors.heroText },
+  selectedLabel: { color: colors.onPrimary },
   success: { backgroundColor: colors.successSoft },
   successLabel: { color: colors.successText },
   warning: { backgroundColor: colors.warningSoft },

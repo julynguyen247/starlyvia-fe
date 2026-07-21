@@ -1,35 +1,62 @@
 import { Platform } from 'react-native';
 
 export const colors = {
-  background: '#F7F5F2',
-  surface: '#FFFFFF',
-  surfaceMuted: '#EEEAE5',
-  text: '#17203B',
-  textMuted: '#62687A',
-  primary: '#4F46E5',
-  primaryDark: '#312E81',
-  primarySoft: '#E9E7FF',
-  accent: '#F97360',
-  accentSoft: '#FFEAE5',
-  success: '#16856B',
-  successSoft: '#DCF5EC',
-  successText: '#11745E',
-  warning: '#A96614',
-  warningSoft: '#FFF2D8',
-  warningText: '#945A0D',
-  danger: '#C4424F',
-  dangerSoft: '#FFE5E8',
-  dangerText: '#AE3542',
-  border: '#E1DDD7',
-  primaryBorder: '#C9C5FF',
+  background: '#0C1511',
+  surface: '#14231C',
+  surfaceWarm: '#192A22',
+  surfaceMuted: '#22362C',
+  text: '#F8F4EC',
+  textMuted: '#AAB8AF',
+  primary: '#FF7442',
+  primaryDark: '#142019',
+  primarySoft: '#3A241B',
+  accent: '#68DA91',
+  accentSoft: '#173925',
+  accentText: '#B2F0C4',
+  onPrimary: '#142019',
+  onAccent: '#123C24',
+  onSticker: '#142019',
+  onStickerMuted: '#2E4036',
+  stickerInkFaint: 'rgba(20, 32, 25, 0.10)',
+  stickerInkSoft: 'rgba(20, 32, 25, 0.18)',
+  stickerGlass: 'rgba(255, 255, 255, 0.58)',
+  illustrationSun: '#FFD15C',
+  illustrationSky: '#BEEAF2',
+  cloud: '#213A2F',
+  cloudSky: '#183427',
+  cloudLavender: '#2B2B37',
+  cloudPeach: '#3D281F',
+  cloudGlow: '#5A4825',
+  stickerOutline: '#F8F4EC',
+  success: '#68DA91',
+  successSoft: '#173925',
+  successText: '#B2F0C4',
+  warning: '#FFC85A',
+  warningSoft: '#3B2F18',
+  warningText: '#FFE09A',
+  danger: '#FF7B84',
+  dangerSoft: '#402126',
+  dangerText: '#FFB7BC',
+  border: '#30473B',
+  controlBorder: '#60766A',
+  primaryBorder: '#81452F',
   heroText: '#FFFFFF',
-  heroTextMuted: '#E0E7FF',
-  heroTextSubtle: '#C7D2FE',
+  heroTextMuted: '#DDE7E0',
+  heroTextSubtle: '#A8DBB6',
   heroDecoration: 'rgba(255, 255, 255, 0.12)',
   heroIconSurface: 'rgba(255, 255, 255, 0.15)',
   white: '#FFFFFF',
   black: '#000000',
-  overlay: 'rgba(23, 32, 59, 0.48)',
+  overlay: 'rgba(3, 9, 6, 0.72)',
+} as const;
+
+export const stickerPalette = {
+  orange: '#FF8A5C',
+  green: '#74DFA0',
+  yellow: '#FFD568',
+  blue: '#86D1EA',
+  violet: '#B9A8F7',
+  coral: '#FF9A8B',
 } as const;
 
 export const spacing = {
@@ -46,6 +73,7 @@ export const radius = {
   sm: 10,
   md: 16,
   lg: 22,
+  xl: 30,
   pill: 999,
 } as const;
 
@@ -58,6 +86,19 @@ export const typography = {
   caption: 12,
 } as const;
 
+export const fontFamilies = {
+  display: Platform.select({
+    ios: 'Avenir Next',
+    android: 'sans-serif-rounded',
+    default: undefined,
+  }),
+  label: Platform.select({
+    ios: 'Avenir Next Condensed',
+    android: 'sans-serif-condensed',
+    default: undefined,
+  }),
+} as const;
+
 export const shadows = Platform.select({
   ios: {
     shadowColor: colors.primaryDark,
@@ -66,5 +107,16 @@ export const shadows = Platform.select({
     shadowRadius: 14,
   },
   android: { elevation: 2 },
+  default: {},
+});
+
+export const stickerShadows = Platform.select({
+  ios: {
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 0,
+  },
+  android: { elevation: 4 },
   default: {},
 });

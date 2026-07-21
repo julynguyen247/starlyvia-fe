@@ -1,27 +1,30 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { StateView } from './src/components/StateView';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { navigationTheme } from './src/theme/navigationTheme';
-import { colors } from './src/theme/tokens';
 
 function Application() {
   const { isRestoring } = useAuth();
 
   if (isRestoring) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator accessibilityLabel="Restoring your session" color={colors.primary} size="large" />
-      </View>
+      <StateView
+        loading
+        message="Packing your travel universe…"
+        presentation="screen"
+        scene="welcome"
+        title="Restoring your session"
+      />
     );
   }
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <RootNavigator />
     </NavigationContainer>
   );
@@ -36,12 +39,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    flex: 1,
-    justifyContent: 'center',
-  },
-});

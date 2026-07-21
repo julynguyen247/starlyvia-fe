@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/tokens';
+import { colors, stickerShadows } from '../theme/tokens';
 import { initials } from '../utils/format';
 
 type Props = {
@@ -10,18 +11,28 @@ type Props = {
 };
 
 export function Avatar({ name, uri, size = 44 }: Props) {
-  if (uri) {
-    return <Image accessibilityLabel={`${name}'s avatar`} source={{ uri }} style={{ borderRadius: size / 2, height: size, width: size }} />;
+  const [failedUri, setFailedUri] = useState<string | null>(null);
+
+  if (uri && failedUri !== uri) {
+    return (
+      <Image
+        accessibilityLabel={`${name}'s avatar`}
+        onError={() => setFailedUri(uri)}
+        source={{ uri }}
+        style={[styles.avatar, { borderRadius: size / 2, height: size, width: size }]}
+      />
+    );
   }
 
   return (
-    <View accessibilityLabel={`${name}'s avatar`} accessible style={[styles.fallback, { borderRadius: size / 2, height: size, width: size }]}>
+    <View accessibilityLabel={`${name}'s avatar`} accessible style={[styles.avatar, styles.fallback, { borderRadius: size / 2, height: size, width: size }]}>
       <Text style={[styles.initials, { fontSize: size * 0.34 }]}>{initials(name)}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  avatar: { borderColor: colors.stickerOutline, borderWidth: 3, ...stickerShadows },
   fallback: { alignItems: 'center', backgroundColor: colors.primarySoft, justifyContent: 'center' },
-  initials: { color: colors.primaryDark, fontWeight: '800' },
+  initials: { color: colors.primary, fontWeight: '800' },
 });

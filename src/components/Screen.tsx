@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../theme/tokens';
+import { DreamyBackdrop } from './DreamyBackdrop';
 
 type Props = PropsWithChildren<{
   scroll?: boolean;
@@ -70,6 +71,7 @@ export function Screen({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
+      <DreamyBackdrop />
       {content}
       {footer}
     </KeyboardAvoidingView>
