@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Starlyvia",
+    "slug": "starlyvia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "starlyvia",
+    "splash": {
+      "backgroundColor": "#F7F5F2"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.starlyvia.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#312E81"
+      },
+      "package": "com.starlyvia.mobile"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

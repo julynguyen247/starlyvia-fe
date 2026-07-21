@@ -1,0 +1,4 @@
+interface:
+  display_name: "Starlyvia Mobile Feature"
+  short_description: "Build complete Starlyvia mobile features"
+  default_prompt: "Use $starlyvia-mobile-feature to implement this feature end to end in the mobile app."

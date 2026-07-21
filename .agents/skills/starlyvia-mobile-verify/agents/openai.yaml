@@ -1,0 +1,4 @@
+interface:
+  display_name: "Starlyvia Mobile Verification"
+  short_description: "Verify mobile behavior and release readiness"
+  default_prompt: "Use $starlyvia-mobile-verify to validate the current mobile changes and report release risks."

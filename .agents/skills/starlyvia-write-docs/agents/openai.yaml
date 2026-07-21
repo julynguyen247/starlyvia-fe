@@ -1,0 +1,4 @@
+interface:
+  display_name: "Starlyvia Documentation"
+  short_description: "Write accurate project documentation"
+  default_prompt: "Use $starlyvia-write-docs to create or update documentation from verified Starlyvia code and contracts."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Starlyvia API Contract Sync"
+  short_description: "Synchronize mobile and backend API contracts"
+  default_prompt: "Use $starlyvia-sync-api-contract to verify and synchronize this mobile API integration."
