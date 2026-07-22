@@ -6,9 +6,11 @@ import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
 import { Screen } from '../../components/Screen';
 import { ScreenIntro } from '../../components/ScreenIntro';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
-import { colors, radius, spacing, typography } from '../../theme/tokens';
+import { radius, spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { GroupType } from '../../types/api';
 import type { RootScreenProps } from '../../types/navigation';
 
@@ -26,6 +28,8 @@ const groupTypes: {
 ];
 
 export function CreateGroupScreen({ navigation }: RootScreenProps<'CreateGroup'>) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<GroupType>('FRIENDS');
@@ -143,13 +147,14 @@ export function CreateGroupScreen({ navigation }: RootScreenProps<'CreateGroup'>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   choice: {
     alignItems: 'center',
     backgroundColor: colors.surfaceWarm,
     borderColor: colors.border,
     borderRadius: radius.md,
-    borderWidth: 2,
+    borderWidth: 1,
     flexBasis: 145,
     flexDirection: 'row',
     flexGrow: 1,
@@ -187,4 +192,5 @@ const styles = StyleSheet.create({
   errorTitle: { color: colors.dangerText, fontSize: typography.small, fontWeight: '800' },
   field: { gap: spacing.sm },
   label: { color: colors.text, fontSize: typography.small, fontWeight: '700' },
-});
+  });
+}

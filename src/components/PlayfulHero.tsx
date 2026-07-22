@@ -4,7 +4,9 @@ import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { colors, radius, spacing, stickerShadows, typography } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { radius, shadows, spacing, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 import { TravelScene, type TravelSceneName } from './TravelScene';
 
 type Props = {
@@ -18,6 +20,8 @@ type Props = {
 };
 
 export function PlayfulHero({ title, description, eyebrow, icon, scene, badge, children }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const reducedMotion = useReducedMotion();
   const reveal = useRef(new Animated.Value(1)).current;
 
@@ -78,7 +82,8 @@ export function PlayfulHero({ title, description, eyebrow, icon, scene, badge, c
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   actions: { alignItems: 'flex-start', marginTop: spacing.sm },
   badge: { alignSelf: 'flex-start' },
   copy: { flex: 1, gap: spacing.sm, minWidth: 176 },
@@ -90,11 +95,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryDark,
     borderColor: colors.heroDecoration,
     borderRadius: radius.xl,
-    borderWidth: 2,
+    borderWidth: 1,
     gap: spacing.sm,
     overflow: 'hidden',
     padding: spacing.xl,
-    ...stickerShadows,
+    ...shadows,
   },
   icon: {
     alignItems: 'center',
@@ -111,4 +116,5 @@ const styles = StyleSheet.create({
   sparkles: { position: 'absolute', right: 88, top: 36 },
   title: { color: colors.heroText, fontSize: typography.title, fontWeight: '900', lineHeight: 33 },
   topRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-});
+  });
+}

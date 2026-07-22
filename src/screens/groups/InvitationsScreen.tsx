@@ -8,13 +8,17 @@ import { Chip } from '../../components/Chip';
 import { DreamyBackdrop } from '../../components/DreamyBackdrop';
 import { ScreenIntro } from '../../components/ScreenIntro';
 import { StateView } from '../../components/StateView';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
-import { colors, radius, shadows, spacing, stickerShadows, typography } from '../../theme/tokens';
+import { radius, shadows, spacing, stickerShadows, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { GroupInvitation } from '../../types/api';
 import { relativeTime } from '../../utils/format';
 
 export function InvitationsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,7 +197,8 @@ export function InvitationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   action: { flexBasis: 140, flexGrow: 1 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
   card: {
@@ -243,4 +248,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: 'space-between',
   },
-});
+  });
+}

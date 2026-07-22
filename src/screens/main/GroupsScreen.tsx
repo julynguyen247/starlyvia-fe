@@ -9,13 +9,17 @@ import { GroupCard } from '../../components/GroupCard';
 import { ScreenIntro } from '../../components/ScreenIntro';
 import { StateView } from '../../components/StateView';
 import { TravelScene } from '../../components/TravelScene';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
-import { colors, radius, shadows, spacing, typography } from '../../theme/tokens';
+import { radius, shadows, spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { Group } from '../../types/api';
 import type { TabScreenProps } from '../../types/navigation';
 
 export function GroupsScreen({ navigation }: TabScreenProps<'Groups'>) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [groups, setGroups] = useState<Group[]>([]);
   const [invitationCount, setInvitationCount] = useState(0);
@@ -163,7 +167,8 @@ export function GroupsScreen({ navigation }: TabScreenProps<'Groups'>) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   header: { gap: spacing.lg },
   list: { flexGrow: 1, gap: spacing.lg, paddingHorizontal: spacing.lg },
   newGroupAction: { alignItems: 'flex-start' },
@@ -201,4 +206,5 @@ const styles = StyleSheet.create({
   },
   warningMessage: { color: colors.warningText, fontSize: typography.small, lineHeight: 20 },
   warningTitle: { color: colors.warningText, fontSize: typography.small, fontWeight: '800' },
-});
+  });
+}

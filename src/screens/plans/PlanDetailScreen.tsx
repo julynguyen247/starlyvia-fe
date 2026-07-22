@@ -9,9 +9,11 @@ import { PlayfulHero } from '../../components/PlayfulHero';
 import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
 import { StateView } from '../../components/StateView';
+import { useAppTheme } from '../../context/ThemeContext';
 import { ApiError, getErrorMessage } from '../../services/apiClient';
 import { planService } from '../../services/planService';
-import { colors, radius, shadows, spacing, stickerShadows, typography } from '../../theme/tokens';
+import { radius, shadows, spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { Plan, PlanRoute, PlanStop, TravelMode } from '../../types/api';
 import type { RootScreenProps } from '../../types/navigation';
 import { formatDateRange, formatDistance, formatDuration, formatTime } from '../../utils/format';
@@ -67,6 +69,8 @@ function getRouteIssue(error: unknown): RouteIssue {
 }
 
 export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDetail'>) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const { planId } = route.params;
   const loadRequestId = useRef(0);
   const routeRequestId = useRef(0);
@@ -407,11 +411,12 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   heroDetails: { gap: spacing.sm },
   heroMeta: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   heroMetaText: { color: colors.heroTextSubtle, flexShrink: 1, fontSize: typography.small, fontWeight: '700' },
-  mode: { alignItems: 'center', backgroundColor: colors.surfaceMuted, borderColor: colors.border, borderRadius: radius.pill, borderWidth: 2, flexDirection: 'row', gap: spacing.xs, minHeight: 44, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  mode: { alignItems: 'center', backgroundColor: colors.surfaceMuted, borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, minHeight: 44, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   modeDisabled: { opacity: 0.6 },
   modeSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   modeText: { color: colors.textMuted, fontSize: typography.caption, fontWeight: '900' },
@@ -421,7 +426,7 @@ const styles = StyleSheet.create({
   rating: { color: colors.warningText, fontSize: typography.caption, fontWeight: '800' },
   ratingRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
   refreshWarning: { alignItems: 'center', backgroundColor: colors.warningSoft, borderRadius: radius.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.md },
-  routeCard: { backgroundColor: colors.surfaceWarm, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, gap: spacing.lg, padding: spacing.lg, ...shadows },
+  routeCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.lg, padding: spacing.lg, ...shadows },
   routeError: { alignItems: 'center', backgroundColor: colors.warningSoft, borderRadius: radius.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.md },
   routeErrorCopy: { flex: 1, gap: spacing.xs, minWidth: 180 },
   routeErrorIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, height: 46, justifyContent: 'center', width: 46 },
@@ -429,7 +434,7 @@ const styles = StyleSheet.create({
   routeErrorTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900' },
   routeHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   routeHeadingCopy: { flex: 1, gap: spacing.xs },
-  routeIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.stickerOutline, borderRadius: radius.md, borderWidth: 2, height: 50, justifyContent: 'center', width: 50 },
+  routeIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, height: 50, justifyContent: 'center', width: 50 },
   routeIntro: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
   routeMetric: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, flex: 1, gap: spacing.xs, minWidth: 120, padding: spacing.md },
   routeMetricLabel: { color: colors.textMuted, fontSize: typography.caption },
@@ -441,19 +446,20 @@ const styles = StyleSheet.create({
   section: { gap: spacing.md },
   stopAction: { alignItems: 'center', borderRadius: radius.pill, height: 44, justifyContent: 'center', width: 44 },
   stopAddress: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
-  stopCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, flex: 1, gap: spacing.sm, marginBottom: spacing.md, padding: spacing.lg },
+  stopCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, gap: spacing.sm, marginBottom: spacing.md, padding: spacing.lg },
   stopCopy: { flex: 1, gap: spacing.xs },
   stopIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.sm, height: 34, justifyContent: 'center', width: 34 },
   stopName: { color: colors.text, fontSize: typography.body, fontWeight: '900' },
   stopNote: { backgroundColor: colors.surfaceMuted, borderRadius: radius.sm, color: colors.textMuted, fontSize: typography.small, lineHeight: 20, padding: spacing.sm },
-  stopNumber: { alignItems: 'center', backgroundColor: colors.accent, borderColor: colors.stickerOutline, borderRadius: radius.pill, borderWidth: 3, height: 36, justifyContent: 'center', width: 36, ...stickerShadows },
+  stopNumber: { alignItems: 'center', backgroundColor: colors.accent, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 1, height: 36, justifyContent: 'center', width: 36, ...shadows },
   stopNumberText: { color: colors.onAccent, fontSize: typography.small, fontWeight: '900' },
   stopRow: { alignItems: 'stretch', flexDirection: 'row', gap: spacing.md },
   stopTime: { color: colors.primary, fontSize: typography.caption, fontWeight: '900' },
   stopTop: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
   timelineColumn: { alignItems: 'center', width: 36 },
-  timelineLine: { borderLeftColor: colors.primaryBorder, borderLeftWidth: 3, borderStyle: 'dashed', flex: 1, marginVertical: spacing.xs },
+  timelineLine: { borderLeftColor: colors.primaryBorder, borderLeftWidth: 2, borderStyle: 'dashed', flex: 1, marginVertical: spacing.xs },
   warningCopy: { flex: 1, gap: spacing.xs, minWidth: 160 },
   warningText: { color: colors.warningText, fontSize: typography.small, lineHeight: 20 },
   warningTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900' },
-});
+  });
+}

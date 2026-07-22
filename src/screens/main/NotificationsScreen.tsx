@@ -8,9 +8,11 @@ import { AppButton } from '../../components/AppButton';
 import { DreamyBackdrop } from '../../components/DreamyBackdrop';
 import { ScreenIntro } from '../../components/ScreenIntro';
 import { StateView } from '../../components/StateView';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { notificationService } from '../../services/notificationService';
-import { colors, radius, spacing, stickerPalette, typography } from '../../theme/tokens';
+import { radius, spacing, stickerPalette, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { Notification } from '../../types/api';
 import { relativeTime } from '../../utils/format';
 
@@ -35,6 +37,8 @@ const typeColors: Record<string, string> = {
 };
 
 export function NotificationsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<Notification[]>([]);
   const [page, setPage] = useState(0);
@@ -261,7 +265,8 @@ export function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   caughtUp: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
   caughtUpText: { color: colors.successText, fontSize: typography.caption, fontWeight: '900' },
   error: { color: colors.dangerText, flex: 1, fontSize: typography.small, lineHeight: 20 },
@@ -288,6 +293,7 @@ const styles = StyleSheet.create({
   unreadCopy: { flex: 1, gap: 2 },
   unreadCount: { color: colors.primary, fontSize: typography.heading, fontWeight: '900' },
   unreadLabel: { color: colors.textMuted, fontSize: typography.caption, fontWeight: '700' },
-  unreadSignal: { backgroundColor: colors.accent, borderColor: colors.stickerOutline, borderRadius: radius.pill, borderWidth: 3, height: 18, width: 18 },
-  unreadSummary: { alignItems: 'center', backgroundColor: colors.surfaceWarm, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.md },
-});
+  unreadSignal: { backgroundColor: colors.accent, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 1, height: 18, width: 18 },
+  unreadSummary: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.md },
+  });
+}

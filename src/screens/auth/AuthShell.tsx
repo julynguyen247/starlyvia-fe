@@ -5,7 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PlayfulHero } from '../../components/PlayfulHero';
 import { DreamyBackdrop } from '../../components/DreamyBackdrop';
-import { colors, radius, shadows, spacing, typography } from '../../theme/tokens';
+import { useAppTheme } from '../../context/ThemeContext';
+import { radius, shadows, spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 
 type Props = PropsWithChildren<{
   title: string;
@@ -14,6 +16,8 @@ type Props = PropsWithChildren<{
 }>;
 
 export function AuthShell({ title, subtitle, requestError, children }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
 
   return (
@@ -67,7 +71,8 @@ export function AuthShell({ title, subtitle, requestError, children }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   brand: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   brandName: { color: colors.text, fontSize: typography.heading, fontWeight: '900', letterSpacing: -0.4 },
   card: {
@@ -93,4 +98,5 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   requestErrorText: { color: colors.dangerText, flex: 1, fontSize: typography.small, lineHeight: 20 },
-});
+  });
+}

@@ -12,4 +12,14 @@ export const placeService = {
       `/api/v1/places/details${queryString({ provider: 'GOOGLE', providerPlaceId })}`,
     );
   },
+  nearby(latitude: number, longitude: number) {
+    return request<PlaceDetails[]>(
+      `/api/v1/places/nearby${queryString({
+        lat: latitude,
+        limit: 8,
+        lng: longitude,
+        radiusMeters: 5000,
+      })}`,
+    );
+  },
 };

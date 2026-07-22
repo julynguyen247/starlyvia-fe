@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { spacing, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 import { DreamyBackdrop } from './DreamyBackdrop';
 
 type Props = PropsWithChildren<{
@@ -33,6 +35,8 @@ export function Screen({
   footer,
   contentStyle,
 }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const bottomPadding = bottomInset ? Math.max(insets.bottom, spacing.xl) : spacing.xl;
 
@@ -78,7 +82,9 @@ export function Screen({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { backgroundColor: colors.background, flex: 1 },
   content: { gap: spacing.lg, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
-});
+  });
+}

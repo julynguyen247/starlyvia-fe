@@ -8,9 +8,11 @@ import { Chip } from '../../components/Chip';
 import { ResponsiveFieldRow } from '../../components/ResponsiveFieldRow';
 import { Screen } from '../../components/Screen';
 import { ScreenIntro } from '../../components/ScreenIntro';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { planService } from '../../services/planService';
-import { colors, radius, spacing, typography } from '../../theme/tokens';
+import { radius, spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { PlanStatus } from '../../types/api';
 import type { RootScreenProps } from '../../types/navigation';
 import { isIsoDate, isTime } from '../../utils/validation';
@@ -25,6 +27,8 @@ function today(): string {
 }
 
 export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreatePlan'>) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const { groupId, groupName } = route.params;
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -132,10 +136,11 @@ export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreateP
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  formCard: { backgroundColor: colors.surfaceWarm, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 2, gap: spacing.lg, padding: spacing.lg },
-  groupTicket: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.accentSoft, borderColor: colors.stickerOutline, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  formCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.lg, padding: spacing.lg },
+  groupTicket: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.accentSoft, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   label: { color: colors.text, fontSize: typography.small, fontWeight: '700' },
   sectionCopy: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
   sectionHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
@@ -145,4 +150,5 @@ const styles = StyleSheet.create({
   ticketEyebrow: { color: colors.accentText, fontSize: typography.caption, fontWeight: '900', letterSpacing: 1 },
   ticketIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, height: 44, justifyContent: 'center', width: 44 },
   ticketName: { color: colors.text, fontSize: typography.body, fontWeight: '900' },
-});
+  });
+}

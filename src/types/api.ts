@@ -154,17 +154,17 @@ export type PlanRoute = {
 
 export type PlaceSuggestion = {
   provider: 'GOOGLE';
-  providerPlaceId: string;
-  name: string;
-  address: string;
-  fullText: string;
+  providerPlaceId: string | null;
+  name: string | null;
+  address: string | null;
+  fullText: string | null;
 };
 
 export type PlaceDetails = {
   provider: 'GOOGLE';
-  providerPlaceId: string;
-  name: string;
-  address: string;
+  providerPlaceId: string | null;
+  name: string | null;
+  address: string | null;
   latitude: number | null;
   longitude: number | null;
   photoUrl: string | null;

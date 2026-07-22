@@ -14,17 +14,19 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { StateView } from '../../components/StateView';
 import { TravelScene } from '../../components/TravelScene';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
 import { planService } from '../../services/planService';
 import {
-  colors,
   radius,
   shadows,
   spacing,
   stickerShadows,
   typography,
+  type ThemeColors,
 } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { Group, GroupMember, Plan } from '../../types/api';
 import type { RootScreenProps } from '../../types/navigation';
 import { formatDate } from '../../utils/format';
@@ -37,6 +39,8 @@ type InlineLoadNoticeProps = {
 };
 
 function InlineLoadNotice({ message, onRetry }: InlineLoadNoticeProps) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   return (
     <View accessibilityLiveRegion="polite" style={styles.loadNotice}>
       <Ionicons color={colors.warningText} name="cloud-offline-outline" size={22} />
@@ -50,6 +54,8 @@ function InlineLoadNotice({ message, onRetry }: InlineLoadNoticeProps) {
 }
 
 export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupDetail'>) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const { user } = useAuth();
   const { groupId } = route.params;
   const hasLoaded = useRef(false);
@@ -325,7 +331,8 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   created: {
     color: colors.heroTextSubtle,
     fontSize: typography.caption,
@@ -414,4 +421,5 @@ const styles = StyleSheet.create({
   },
   removePressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
   sectionGap: { gap: spacing.md },
-});
+  });
+}

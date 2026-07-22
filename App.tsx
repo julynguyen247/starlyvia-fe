@@ -4,11 +4,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { StateView } from './src/components/StateView';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { navigationTheme } from './src/theme/navigationTheme';
 
 function Application() {
   const { isRestoring } = useAuth();
+  const { navigationTheme, statusBarStyle } = useAppTheme();
 
   if (isRestoring) {
     return (
@@ -24,7 +25,7 @@ function Application() {
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      <StatusBar style="light" />
+      <StatusBar style={statusBarStyle} />
       <RootNavigator />
     </NavigationContainer>
   );
@@ -33,9 +34,11 @@ function Application() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <Application />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Application />
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

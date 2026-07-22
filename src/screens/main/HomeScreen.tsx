@@ -12,11 +12,13 @@ import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
 import { StateView } from '../../components/StateView';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
 import { notificationService } from '../../services/notificationService';
 import { planService } from '../../services/planService';
-import { colors, radius, spacing, typography } from '../../theme/tokens';
+import { radius, spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { Group, Plan } from '../../types/api';
 import type { TabScreenProps } from '../../types/navigation';
 
@@ -27,6 +29,8 @@ function safeErrorMessage(error: unknown): string {
 }
 
 export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const { user } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -296,7 +300,8 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   eyebrow: { color: colors.textMuted, fontSize: typography.caption, fontWeight: '700' },
   greeting: { flex: 1, gap: 2 },
   header: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
@@ -360,4 +365,5 @@ const styles = StyleSheet.create({
   warningCopy: { flex: 1, gap: spacing.xs, minWidth: 180 },
   warningText: { color: colors.warningText, fontSize: typography.small, lineHeight: 20 },
   warningTitle: { color: colors.warningText, fontSize: typography.small, fontWeight: '800' },
-});
+  });
+}
