@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CreateGroupScreen } from '../screens/groups/CreateGroupScreen';
 import { GroupDetailScreen } from '../screens/groups/GroupDetailScreen';
 import { InvitationsScreen } from '../screens/groups/InvitationsScreen';
@@ -17,7 +20,7 @@ import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { AddStopScreen } from '../screens/plans/AddStopScreen';
 import { CreatePlanScreen } from '../screens/plans/CreatePlanScreen';
 import { PlanDetailScreen } from '../screens/plans/PlanDetailScreen';
-import { typography, type ThemeColors } from '../theme/tokens';
+import { radius, spacing, typography, type ThemeColors } from '../theme/tokens';
 import { useThemedStyles } from '../theme/useThemedStyles';
 import type { AuthStackParamList, MainTabParamList, RootStackParamList } from '../types/navigation';
 
@@ -32,35 +35,123 @@ const tabIcons: Record<keyof MainTabParamList, { active: keyof typeof Ionicons.g
   Profile: { active: 'person-circle', inactive: 'person-circle-outline' },
 };
 
-function MainTabs() {
+function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useAppTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
+  const qrReveal = useRef(new Animated.Value(1)).current;
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    if (reducedMotion !== false) {
+      qrReveal.setValue(1);
+      return;
+    }
+
+    qrReveal.setValue(0.86);
+    const animation = Animated.spring(qrReveal, {
+      damping: 12,
+      mass: 0.65,
+      stiffness: 170,
+      toValue: 1,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [qrReveal, reducedMotion]);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true),
+    );
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false),
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  if (keyboardVisible) return null;
+
+  function renderRoute(index: number) {
+    const route = state.routes[index];
+    if (!route) return null;
+    const options = descriptors[route.key]?.options;
+    const focused = state.index === index;
+    const icons = tabIcons[route.name as keyof MainTabParamList];
+    if (!icons) return null;
+
+    return (
+      <Pressable
+        accessibilityLabel={options?.tabBarAccessibilityLabel ?? route.name}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: focused }}
+        key={route.key}
+        onLongPress={() => navigation.emit({ target: route.key, type: 'tabLongPress' })}
+        onPress={() => {
+          const event = navigation.emit({
+            canPreventDefault: true,
+            target: route.key,
+            type: 'tabPress',
+          });
+          if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
+        }}
+        style={({ pressed }) => [styles.tabItem, pressed && styles.tabItemPressed]}
+      >
+        <Ionicons
+          color={focused ? colors.primary : colors.navigationIcon}
+          name={focused ? icons.active : icons.inactive}
+          size={focused ? 23 : 22}
+        />
+        <View style={[styles.activeDot, focused && styles.activeDotVisible]} />
+      </Pressable>
+    );
+  }
+
+  return (
+    <Animated.View
+      style={[
+        styles.tabBarArea,
+        { paddingBottom: Math.max(insets.bottom, spacing.sm) },
+      ]}
+    >
+      <View style={styles.tabBarPill}>
+        {renderRoute(0)}
+        {renderRoute(1)}
+        <Animated.View style={[styles.qrLift, { transform: [{ translateY: -8 }, { scale: qrReveal }] }]}>
+          <Pressable
+            accessibilityHint="QR scanning will be added in a future update"
+            accessibilityLabel="QR scanner, coming soon"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: true }}
+            disabled
+            style={styles.qrButton}
+          >
+            <Ionicons color={colors.onPrimary} name="qr-code-outline" size={27} />
+          </Pressable>
+        </Animated.View>
+        {renderRoute(2)}
+        {renderRoute(3)}
+      </View>
+    </Animated.View>
+  );
+}
+
+function MainTabs() {
   return (
     <Tabs.Navigator
       backBehavior="history"
-      screenOptions={({ route }) => ({
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.heroTextSubtle,
-        tabBarHideOnKeyboard: true,
-        tabBarIcon: ({ color, focused, size }) => (
-          <View style={[styles.tabIcon, focused && styles.tabIconFocused]}>
-            <Ionicons
-              color={focused ? colors.onPrimary : color}
-              name={focused ? tabIcons[route.name].active : tabIcons[route.name].inactive}
-              size={Math.min(size, 21)}
-            />
-          </View>
-        ),
-        tabBarLabelStyle: { fontSize: typography.caption, fontWeight: '700' },
-        tabBarStyle: {
-          backgroundColor: colors.primaryDark,
-          borderTopColor: colors.primaryDark,
-          borderTopWidth: 1,
-          minHeight: 72,
-          paddingTop: 6,
-        },
-      })}
+        tabBarShowLabel: false,
+      }}
     >
       <Tabs.Screen component={HomeScreen} name="Home" />
       <Tabs.Screen component={GroupsScreen} name="Groups" />
@@ -109,17 +200,62 @@ export function RootNavigator() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-  tabIcon: {
-    alignItems: 'center',
-    borderRadius: 14,
-    height: 34,
-    justifyContent: 'center',
-    width: 42,
-  },
-  tabIconFocused: {
+  activeDot: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    borderWidth: 1,
+    borderRadius: radius.pill,
+    height: 3,
+    marginTop: 4,
+    opacity: 0,
+    width: 3,
   },
+  activeDotVisible: { opacity: 1, width: 14 },
+  qrButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderColor: colors.navigationSurface,
+    borderRadius: radius.pill,
+    borderWidth: 4,
+    elevation: 10,
+    height: 58,
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { height: 5, width: 0 },
+    shadowOpacity: 0.34,
+    shadowRadius: 9,
+    width: 58,
+  },
+  qrLift: { alignItems: 'center', justifyContent: 'center', width: 58 },
+  tabBarArea: {
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  tabBarPill: {
+    alignItems: 'center',
+    backgroundColor: colors.navigationSurface,
+    borderColor: colors.navigationBorder,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    elevation: 8,
+    flexDirection: 'row',
+    height: 68,
+    justifyContent: 'space-between',
+    maxWidth: 340,
+    paddingHorizontal: spacing.sm,
+    shadowColor: colors.black,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    width: '100%',
+  },
+  tabItem: {
+    alignItems: 'center',
+    height: 56,
+    justifyContent: 'center',
+    minWidth: 44,
+    width: 52,
+  },
+  tabItemPressed: { opacity: 0.66, transform: [{ scale: 0.92 }] },
   });
 }
