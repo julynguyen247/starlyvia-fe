@@ -7,12 +7,13 @@ React Native mobile client for the Starlyvia collaborative trip-planning backend
 - Expo SDK 57 and React Native 0.86
 - TypeScript in strict mode
 - React Navigation native stack and bottom tabs
-- Expo Secure Store for the JWT session
+- `react-native-maps` for native map place selection
+- Expo Secure Store and System UI for persisted sessions and adaptive appearance
 - Plain React state for screen-local server and form state
 
 ## Documentation
 
-- [Architecture](./ARCHITECTURE.md) — system boundaries, data flow, state ownership, and known backend gaps.
+- [Architecture](./docs/ARCHITECTURE.md) — system boundaries, data flow, state ownership, and known backend gaps.
 - [Coding conventions and linting](./docs/CODING_CONVENTIONS.md) — source patterns, module boundaries, TypeScript rules, and the current static-check workflow.
 - [Mobile UI rules and theme](./docs/MOBILE_UI_RULES.md) — visual tokens, shared components, responsive behavior, interaction states, and accessibility.
 
@@ -60,8 +61,12 @@ Both commands currently run `tsc --noEmit`. See the [coding conventions and lint
 1. Register or sign in.
 2. Create a travel circle or accept an invitation.
 3. Open the circle and create an itinerary.
-4. Add stops using place search or manual entry.
+4. Add stops by dropping a map pin, exploring nearby places, searching by name, or entering one manually.
 5. With two coordinate-backed stops, calculate a drive, walk, or bicycle route.
 6. Review collaboration activity in Updates.
 
+Appearance follows the device by default. Travelers can choose System, Light, or Dark from Profile; the preference is restored securely on the next launch.
+
 Place lookup requires `GOOGLE_PLACES_API_KEY` on the backend. Route calculation requires `OPENROUTESERVICE_API_KEY`. Neither key belongs in this mobile project.
+
+The map uses each platform's native provider through `react-native-maps`. Expo Go supplies development map configuration. For a standalone Android build, set a restricted `GOOGLE_MAPS_ANDROID_API_KEY` in the build environment; `app.config.ts` passes it to the native Maps plugin. Do not reuse the backend Places key.

@@ -8,6 +8,7 @@ Starlyvia Mobile is a React Native client for the Starlyvia collaborative trip-p
 - travel groups, memberships, invitations, and member removal;
 - group itineraries and ordered itinerary stops;
 - Google-backed place autocomplete and place details;
+- native map pin selection and nearby-place discovery;
 - drive, walk, and bicycle route summaries;
 - paginated notifications and read state.
 
@@ -50,7 +51,8 @@ starlyvia-fe/
 ├── src/
 │   ├── components/              # reusable presentational UI
 │   ├── context/
-│   │   └── AuthContext.tsx      # session lifecycle and secure persistence
+│   │   ├── AuthContext.tsx      # session lifecycle and secure persistence
+│   │   └── ThemeContext.tsx     # persisted appearance and resolved color scheme
 │   ├── navigation/
 │   │   └── RootNavigator.tsx    # authenticated stack, auth stack, tabs
 │   ├── screens/
@@ -172,8 +174,9 @@ Screens fetch again on focus when another screen can mutate their data. Pull-to-
 | JWT and current user | `AuthContext` | Shared across the entire app and persisted securely |
 | Groups, plans, members | Consuming screen | Server state needed by one route at a time |
 | Form fields/errors | Form screen | Temporary, unsaved UI state |
-| Place search session/results | `AddStopScreen` | Short-lived Google session and query state |
+| Place search, map viewport, pin, and nearby results | `AddStopScreen` | Short-lived place-selection state for one stop |
 | Route mode/result | `PlanDetailScreen` | Derived for one itinerary view |
+| System/light/dark preference | `ThemeContext` | Shared appearance state restored from secure storage |
 
 A query cache can be introduced later if duplicated server state or offline behavior becomes significant. Adding one now would create more invalidation logic than value.
 
@@ -196,6 +199,7 @@ Only the gateway URL is a public build-time value. Google Places, OpenRouteServi
 - Mutating buttons lock during submission to prevent duplicates.
 - Notification read state is optimistic and rolls back on failure.
 - Place search failures preserve manual stop entry.
+- Nearby lookup failures preserve direct map-pin and manual entry.
 - A missing provider key can prevent place or route lookup, but the rest of itinerary management remains usable.
 
 ## 11. Current backend gaps and client decisions
@@ -204,7 +208,7 @@ Only the gateway URL is a public build-time value. Google Places, OpenRouteServi
 2. **No user search/profile lookup REST endpoint.** Group invitations accept only `inviteeId`, and member objects expose only UUIDs. The client clearly labels the UUID input and displays a shortened identifier for other members. A user directory endpoint should replace this UX.
 3. **No group update/delete endpoint.** The client does not show controls the backend cannot fulfill.
 4. **No push registration or realtime stream.** Notifications refresh on focus, pull, and pagination. Push tokens and delivery require backend work.
-5. **No map tile contract or chosen map provider.** Route geometry is typed and retained, but the MVP renders distance and duration rather than adding another provider key or native map dependency.
+5. **Native map configuration is platform-owned.** Place selection uses `react-native-maps` with the platform-native provider. Expo Go supplies development configuration, while standalone Android builds read a restricted Maps SDK key from `GOOGLE_MAPS_ANDROID_API_KEY` through `app.config.ts`. This key is separate from the backend-only Places key. Route geometry is retained but is not yet drawn on the map.
 6. **No refresh token.** A rejected or expired JWT signs the user out. A refresh-token rotation API is required for uninterrupted long-lived sessions.
 
 ## 12. Testing strategy
@@ -231,7 +235,7 @@ Recommended next tests:
 When product requirements justify them:
 
 1. add a query cache for shared normalized server state and offline reads;
-2. add a map adapter behind a component boundary, consuming the existing route geometry type;
+2. extend the existing map boundary to draw the retained route geometry;
 3. add push notification registration and deep links to group or plan resources;
 4. add background token refresh after the backend supports rotating refresh tokens;
 5. add an offline mutation queue only after conflict semantics are defined server-side;
