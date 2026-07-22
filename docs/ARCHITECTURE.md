@@ -7,7 +7,7 @@ Starlyvia Mobile is a React Native client for the Starlyvia collaborative trip-p
 - account registration, login, session restoration, and logout;
 - travel groups, memberships, invitations, and member removal;
 - group itineraries and ordered itinerary stops;
-- Google-backed place autocomplete and place details;
+- Geoapify-backed place autocomplete and place details;
 - native map pin selection and nearby-place discovery;
 - drive, walk, and bicycle route summaries;
 - paginated notifications and read state.
@@ -189,7 +189,7 @@ A query cache can be introduced later if duplicated server state or offline beha
 
 A physical device must use the development machine's LAN address, for example `http://192.168.1.10:8080`, and the device and machine must share a network. Production must use an HTTPS gateway URL.
 
-Only the gateway URL is a public build-time value. Google Places, OpenRouteService, JWT signing, and database secrets must remain in backend configuration.
+Only the gateway URL is a public build-time value. Geoapify, OpenRouteService, JWT signing, and database secrets must remain in backend configuration.
 
 ## 10. Error and resilience model
 
@@ -208,7 +208,7 @@ Only the gateway URL is a public build-time value. Google Places, OpenRouteServi
 2. **No user search/profile lookup REST endpoint.** Group invitations accept only `inviteeId`, and member objects expose only UUIDs. The client clearly labels the UUID input and displays a shortened identifier for other members. A user directory endpoint should replace this UX.
 3. **No group update/delete endpoint.** The client does not show controls the backend cannot fulfill.
 4. **No push registration or realtime stream.** Notifications refresh on focus, pull, and pagination. Push tokens and delivery require backend work.
-5. **Native map configuration is platform-owned.** Place selection uses `react-native-maps` with the platform-native provider. Expo Go supplies development configuration, while standalone Android builds read a restricted Maps SDK key from `GOOGLE_MAPS_ANDROID_API_KEY` through `app.config.ts`. This key is separate from the backend-only Places key. Route geometry is retained but is not yet drawn on the map.
+5. **The place map is a custom native module.** Place selection uses MapLibre Native with OpenFreeMap vector styles and visible OpenStreetMap attribution. It requires no client map key, but it cannot run inside Expo Go; Android and iOS use development or release builds configured by the MapLibre Expo plugin. Geoapify place search remains backend-only. Route geometry is retained but is not yet drawn on the map.
 6. **No refresh token.** A rejected or expired JWT signs the user out. A refresh-token rotation API is required for uninterrupted long-lived sessions.
 
 ## 12. Testing strategy
