@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { colors, radius } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { radius, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 
 export type TravelSceneName =
   | 'welcome'
@@ -46,6 +48,8 @@ export function TravelScene({
   accessibilityLabel,
   style,
 }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const reducedMotion = useReducedMotion();
   const reveal = useRef(new Animated.Value(1)).current;
   const [failed, setFailed] = useState(false);
@@ -113,17 +117,19 @@ export function TravelScene({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { alignItems: 'center', justifyContent: 'center' },
   fallback: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
     borderColor: colors.stickerOutline,
     borderRadius: radius.xl,
-    borderWidth: 3,
+    borderWidth: 1,
     height: '72%',
     justifyContent: 'center',
     width: '72%',
   },
   image: { height: '100%', width: '100%' },
-});
+  });
+}

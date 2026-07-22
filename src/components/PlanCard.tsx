@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontFamilies, radius, spacing, stickerPalette, stickerShadows, typography } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { fontFamilies, radius, shadows, spacing, stickerPalette, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 import type { Plan } from '../types/api';
 import { formatDateRange } from '../utils/format';
 import { Chip } from './Chip';
@@ -22,18 +24,18 @@ const statusColors: Record<Plan['status'], string> = {
 };
 
 export function PlanCard({ plan, onPress }: { plan: Plan; onPress: () => void }) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable
       accessibilityLabel={`${plan.planName}. ${plan.status}. ${formatDateRange(plan.planStartDate, plan.planEndDate)}. ${plan.stops.length} ${plan.stops.length === 1 ? 'stop' : 'stops'}. Open itinerary.`}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.card, { backgroundColor: statusColors[plan.status] }, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.ticketNotch, styles.ticketNotchLeft]} />
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.ticketNotch, styles.ticketNotchRight]} />
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.routeStrip}>
-        <View style={styles.routeIcon}>
-          <Ionicons color={colors.onPrimary} name="airplane" size={15} />
+        <View style={[styles.routeIcon, { backgroundColor: statusColors[plan.status] }]}>
+          <Ionicons color={colors.onSticker} name="airplane" size={15} />
         </View>
         <Text style={styles.routeLabel}>TRIP BOARD</Text>
         <View style={styles.routeLine} />
@@ -70,7 +72,8 @@ export function PlanCard({ plan, onPress }: { plan: Plan; onPress: () => void })
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   arrowWell: {
     alignItems: 'center',
     backgroundColor: colors.stickerGlass,
@@ -84,38 +87,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: colors.stickerGlass,
-    borderColor: colors.onSticker,
+    borderColor: colors.border,
     borderRadius: radius.lg,
-    borderWidth: 2,
+    borderWidth: 1,
     height: 104,
     justifyContent: 'center',
-    transform: [{ rotate: '3deg' }],
     width: 104,
   },
   body: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   card: {
-    backgroundColor: colors.surfaceWarm,
-    borderColor: colors.onSticker,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: radius.lg,
-    borderWidth: 2,
+    borderWidth: 1,
     gap: spacing.md,
     minHeight: 274,
     padding: spacing.lg,
-    ...stickerShadows,
+    ...shadows,
   },
   copy: { flex: 1, gap: spacing.sm, minWidth: 170 },
-  date: { color: colors.onStickerMuted, flexShrink: 1, fontFamily: fontFamilies.label, fontSize: typography.caption, fontWeight: '800', textAlign: 'right' },
+  date: { color: colors.textMuted, flexShrink: 1, fontFamily: fontFamilies.label, fontSize: typography.caption, fontWeight: '800', textAlign: 'right' },
   boardSticker: { alignItems: 'center', backgroundColor: colors.stickerGlass, borderRadius: radius.pill, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: 7 },
   boardStickerText: { color: colors.onSticker, fontFamily: fontFamilies.label, fontSize: typography.caption, fontWeight: '900', letterSpacing: 0.5 },
-  description: { color: colors.onStickerMuted, fontSize: typography.small, lineHeight: 20 },
+  description: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
   footer: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between', marginTop: spacing.xs },
   meta: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
-  metaText: { color: colors.onSticker, fontFamily: fontFamilies.label, fontSize: typography.small, fontWeight: '800' },
-  name: { color: colors.onSticker, fontFamily: fontFamilies.display, fontSize: typography.title, fontWeight: '900', letterSpacing: -0.6, lineHeight: 31 },
+  metaText: { color: colors.text, fontFamily: fontFamilies.label, fontSize: typography.small, fontWeight: '800' },
+  name: { color: colors.text, fontFamily: fontFamilies.display, fontSize: typography.title, fontWeight: '900', letterSpacing: -0.6, lineHeight: 31 },
   pressed: { opacity: 0.84, transform: [{ translateY: 2 }, { scale: 0.99 }] },
   routeIcon: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
     borderRadius: radius.pill,
     height: 30,
     justifyContent: 'center',
@@ -137,8 +138,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     padding: spacing.sm,
   },
-  ticketNotch: { backgroundColor: colors.background, borderRadius: radius.pill, height: 22, position: 'absolute', top: '54%', width: 22 },
-  ticketNotchLeft: { left: -11 },
-  ticketNotchRight: { right: -11 },
   topRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
-});
+  });
+}

@@ -8,7 +8,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, radius, spacing, stickerShadows, typography } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { radius, shadows, spacing, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -23,13 +25,6 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const variantStyles: Record<ButtonVariant, { background: string; border: string; text: string }> = {
-  primary: { background: colors.primary, border: colors.primaryDark, text: colors.onPrimary },
-  secondary: { background: colors.accentSoft, border: colors.accent, text: colors.accentText },
-  ghost: { background: 'transparent', border: colors.controlBorder, text: colors.text },
-  danger: { background: colors.dangerSoft, border: colors.dangerSoft, text: colors.dangerText },
-};
-
 export function AppButton({
   label,
   onPress,
@@ -40,6 +35,14 @@ export function AppButton({
   compact = false,
   style,
 }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
+  const variantStyles: Record<ButtonVariant, { background: string; border: string; text: string }> = {
+    primary: { background: colors.primary, border: colors.primary, text: colors.onPrimary },
+    secondary: { background: colors.accentSoft, border: colors.accent, text: colors.accentText },
+    ghost: { background: 'transparent', border: colors.controlBorder, text: colors.text },
+    danger: { background: colors.dangerSoft, border: colors.dangerSoft, text: colors.dangerText },
+  };
   const palette = variantStyles[variant];
   const isDisabled = disabled || loading;
 
@@ -72,11 +75,12 @@ export function AppButton({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(_colors: ThemeColors) {
+  return StyleSheet.create({
   base: {
     alignItems: 'center',
     borderRadius: radius.md,
-    borderWidth: 2,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     justifyContent: 'center',
@@ -90,5 +94,6 @@ const styles = StyleSheet.create({
   disabled: { elevation: 0, opacity: 0.52, shadowOpacity: 0 },
   label: { fontSize: typography.body, fontWeight: '700' },
   pressed: { opacity: 0.9, transform: [{ translateY: 2 }, { scale: 0.98 }] },
-  raised: { ...stickerShadows },
-});
+  raised: { ...shadows },
+  });
+}

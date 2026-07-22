@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { radius, spacing, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 import { TravelScene, type TravelSceneName } from './TravelScene';
 
 type Props = {
@@ -12,6 +14,8 @@ type Props = {
 };
 
 export function ScreenIntro({ title, subtitle, icon, scene }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.container}>
       {scene ? (
@@ -29,7 +33,8 @@ export function ScreenIntro({ title, subtitle, icon, scene }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.md },
   copy: { flex: 1, gap: spacing.sm },
   icon: {
@@ -43,4 +48,5 @@ const styles = StyleSheet.create({
   scene: { marginHorizontal: -spacing.sm, marginVertical: -spacing.md },
   subtitle: { color: colors.textMuted, fontSize: typography.body, lineHeight: 24 },
   title: { color: colors.text, fontSize: typography.title, fontWeight: '900', letterSpacing: -0.6 },
-});
+  });
+}

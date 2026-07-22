@@ -2,7 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radius, spacing, typography } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { radius, spacing, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 import { AppButton } from './AppButton';
 import { DreamyBackdrop } from './DreamyBackdrop';
 import { TravelScene, type TravelSceneName } from './TravelScene';
@@ -33,6 +35,8 @@ export function StateView({
   actionLabel,
   onAction,
 }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const resolvedKind: StateKind = loading ? 'loading' : kind;
   const isLoading = resolvedKind === 'loading';
@@ -69,7 +73,8 @@ export function StateView({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     alignItems: 'center',
     gap: spacing.md,
@@ -94,4 +99,5 @@ const styles = StyleSheet.create({
   },
   screen: { backgroundColor: colors.background, flex: 1, minHeight: 0 },
   title: { color: colors.text, fontSize: typography.heading, fontWeight: '800', textAlign: 'center' },
-});
+  });
+}

@@ -10,7 +10,9 @@ import {
   View,
 } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { radius, spacing, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 
 type Props = TextInputProps & {
   label: string;
@@ -36,6 +38,8 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
   },
   ref,
 ) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const [focused, setFocused] = useState(false);
 
   return (
@@ -74,7 +78,8 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
   );
 });
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   error: { color: colors.dangerText, fontSize: typography.caption, marginTop: spacing.xs },
   input: {
     color: colors.text,
@@ -91,7 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceWarm,
     borderColor: colors.controlBorder,
     borderRadius: radius.md,
-    borderWidth: 2,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
@@ -105,4 +110,5 @@ const styles = StyleSheet.create({
   multilineInput: { minHeight: 92, textAlignVertical: 'top' },
   multilineShell: { alignItems: 'flex-start' },
   wrapper: { width: '100%' },
-});
+  });
+}

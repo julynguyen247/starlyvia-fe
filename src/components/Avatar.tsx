@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { colors, stickerShadows } from '../theme/tokens';
+import { shadows, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 import { initials } from '../utils/format';
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function Avatar({ name, uri, size = 44 }: Props) {
+  const styles = useThemedStyles(createStyles);
   const [failedUri, setFailedUri] = useState<string | null>(null);
 
   if (uri && failedUri !== uri) {
@@ -31,8 +33,10 @@ export function Avatar({ name, uri, size = 44 }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  avatar: { borderColor: colors.stickerOutline, borderWidth: 3, ...stickerShadows },
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+  avatar: { borderColor: colors.surface, borderWidth: 2, ...shadows },
   fallback: { alignItems: 'center', backgroundColor: colors.primarySoft, justifyContent: 'center' },
   initials: { color: colors.primary, fontWeight: '800' },
-});
+  });
+}

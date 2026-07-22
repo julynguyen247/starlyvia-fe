@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
+import { useAppTheme } from '../context/ThemeContext';
 import { CreateGroupScreen } from '../screens/groups/CreateGroupScreen';
 import { GroupDetailScreen } from '../screens/groups/GroupDetailScreen';
 import { InvitationsScreen } from '../screens/groups/InvitationsScreen';
@@ -16,7 +17,8 @@ import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { AddStopScreen } from '../screens/plans/AddStopScreen';
 import { CreatePlanScreen } from '../screens/plans/CreatePlanScreen';
 import { PlanDetailScreen } from '../screens/plans/PlanDetailScreen';
-import { colors, typography } from '../theme/tokens';
+import { typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 import type { AuthStackParamList, MainTabParamList, RootStackParamList } from '../types/navigation';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -31,6 +33,8 @@ const tabIcons: Record<keyof MainTabParamList, { active: keyof typeof Ionicons.g
 };
 
 function MainTabs() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   return (
     <Tabs.Navigator
       backBehavior="history"
@@ -77,6 +81,7 @@ function AuthNavigator() {
 
 export function RootNavigator() {
   const { token } = useAuth();
+  const { colors } = useAppTheme();
 
   if (!token) return <AuthNavigator />;
 
@@ -102,7 +107,8 @@ export function RootNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   tabIcon: {
     alignItems: 'center',
     borderRadius: 14,
@@ -115,4 +121,5 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     borderWidth: 1,
   },
-});
+  });
+}

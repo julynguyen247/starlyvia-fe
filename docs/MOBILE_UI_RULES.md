@@ -1,10 +1,10 @@
 # Starlyvia Mobile UI System
 
-**Status:** Implemented dark-first direction for the Expo React Native client.
+**Status:** Implemented adaptive light/dark direction for the Expo React Native client.
 
 ## 1. Experience goal
 
-Starlyvia should make collaborative trip planning feel energetic, friendly, and easy to finish. The interface takes its visual direction from playful mobile story apps: an immersive charcoal canvas, fresh green highlights, bright orange actions, colorful sticker cards, bold rounded typography, and compact travel illustrations.
+Starlyvia should make collaborative trip planning feel energetic, friendly, and easy to finish. The interface combines calm neutral surfaces, fresh green highlights, warm orange actions, selective color, rounded typography, and compact travel illustrations. Playfulness belongs in focal moments and feedback rather than every border or card.
 
 The design must remain useful before it is decorative. A traveler should always be able to identify the current screen, its state, and the next action at a glance.
 
@@ -23,7 +23,7 @@ Each screen gets one expressive focal area. Routine controls and long-form conte
 
 ## 3. Theme foundation
 
-`src/theme/tokens.ts` is the source of truth. Screens and components must use semantic tokens rather than introducing isolated color literals.
+`src/theme/tokens.ts` is the source of truth. `ThemeContext` resolves System, Light, or Dark and persists the preference. Screens and components must consume semantic colors through `useAppTheme` rather than introducing isolated literals.
 
 ### 3.1 Color roles
 
@@ -50,7 +50,7 @@ Success, warning, and danger tokens remain semantic. They are never reassigned s
 ### 3.2 Color balance
 
 - Use charcoal for the app canvas, navigation, forms, and routine reading surfaces.
-- Raise sections through lighter dark surfaces and borders instead of white cards.
+- Raise sections through theme surfaces, spacing, and subtle borders.
 - Use orange for the dominant action and small active markers.
 - Use green for secondary emphasis, selection, invitations, and positive progress.
 - Give domain cards a stable sticker color selected from orange, green, yellow, blue, violet, or coral.
@@ -61,7 +61,7 @@ Success, warning, and danger tokens remain semantic. They are never reassigned s
 - Use the shared 4, 8, 12, 16, 24, 32, and 48 point spacing scale.
 - Use 16–30 point radii for primary cards and heroes; use pill radii only for compact status and selection controls.
 - Prefer a strong silhouette and clear internal spacing over many borders.
-- Bright sticker cards use a dark offset shadow; routine dark cards use a subtle border.
+- Keep routine cards to a subtle 1-point border and soft depth. Reserve sticker depth for a small number of expressive domain cards.
 - Keep primary touch targets at least 44 by 44 points.
 
 ### 3.4 Typography character
@@ -252,4 +252,4 @@ Create a new shared component only when it is reused or materially reduces scree
 
 ## 12. Current boundaries
 
-The React Native surface is dark-first, uses platform-native system, rounded, and condensed font families, and uses built-in React Native animation. `app.json` declares a dark interface and dark Android status bar; persisting that choice into a standalone Android native `AppTheme` still requires the SDK-compatible `expo-system-ui` dependency, which is not currently installed. The shared artwork remains raster PNG. Automated visual regression and native component-state tests are not configured, so Android and iOS device checks remain part of release validation.
+The React Native surface supports a persisted System, Light, or Dark preference, uses platform-native system, rounded, and condensed font families, and uses built-in React Native animation. `app.json` allows automatic platform appearance while the React tree updates navigation and status-bar colors live. Native place selection uses `react-native-maps`; standalone Android builds read a restricted Google Maps SDK key from `GOOGLE_MAPS_ANDROID_API_KEY` through `app.config.ts`, separate from the backend Places credential. The shared artwork remains raster PNG. Automated visual regression and native component-state tests are not configured, so Android and iOS device checks remain part of release validation.

@@ -1,6 +1,8 @@
 import { Platform } from 'react-native';
 
-export const colors = {
+export type ThemePreference = 'system' | 'light' | 'dark';
+
+export const darkColors = {
   background: '#0C1511',
   surface: '#14231C',
   surfaceWarm: '#192A22',
@@ -49,6 +51,58 @@ export const colors = {
   black: '#000000',
   overlay: 'rgba(3, 9, 6, 0.72)',
 } as const;
+
+export type ThemeColors = { [Key in keyof typeof darkColors]: string };
+
+export const lightColors: ThemeColors = {
+  background: '#F7F5EE',
+  surface: '#FFFFFF',
+  surfaceWarm: '#FFF9F0',
+  surfaceMuted: '#E9EFE9',
+  text: '#19251E',
+  textMuted: '#607067',
+  primary: '#F26435',
+  primaryDark: '#253C31',
+  primarySoft: '#FFE3D5',
+  accent: '#54C984',
+  accentSoft: '#DDF7E6',
+  accentText: '#24663D',
+  onPrimary: '#17251D',
+  onAccent: '#123C24',
+  onSticker: '#142019',
+  onStickerMuted: '#2E4036',
+  stickerInkFaint: 'rgba(20, 32, 25, 0.10)',
+  stickerInkSoft: 'rgba(20, 32, 25, 0.18)',
+  stickerGlass: 'rgba(255, 255, 255, 0.72)',
+  illustrationSun: '#F6BD3D',
+  illustrationSky: '#BEEAF2',
+  cloud: '#DCECE3',
+  cloudSky: '#D6EEF1',
+  cloudLavender: '#E7E2F4',
+  cloudPeach: '#FFE3D5',
+  cloudGlow: '#FFF0BE',
+  stickerOutline: '#FFFFFF',
+  success: '#36A866',
+  successSoft: '#DDF7E6',
+  successText: '#24663D',
+  warning: '#D99A20',
+  warningSoft: '#FFF0C9',
+  warningText: '#78510A',
+  danger: '#D9535D',
+  dangerSoft: '#FFE1E3',
+  dangerText: '#8D3038',
+  border: '#D9E2DB',
+  controlBorder: '#B6C5BB',
+  primaryBorder: '#D95A32',
+  heroText: '#FFFFFF',
+  heroTextMuted: '#E9F3EC',
+  heroTextSubtle: '#C8E9D2',
+  heroDecoration: 'rgba(255, 255, 255, 0.14)',
+  heroIconSurface: 'rgba(255, 255, 255, 0.17)',
+  white: '#FFFFFF',
+  black: '#000000',
+  overlay: 'rgba(15, 27, 20, 0.48)',
+};
 
 export const stickerPalette = {
   orange: '#FF8A5C',
@@ -101,7 +155,7 @@ export const fontFamilies = {
 
 export const shadows = Platform.select({
   ios: {
-    shadowColor: colors.primaryDark,
+    shadowColor: '#142019',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 14,
@@ -112,7 +166,7 @@ export const shadows = Platform.select({
 
 export const stickerShadows = Platform.select({
   ios: {
-    shadowColor: colors.primaryDark,
+    shadowColor: '#142019',
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.16,
     shadowRadius: 0,

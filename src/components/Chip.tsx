@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
+import { radius, spacing, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 
 type Props = {
   label: string;
@@ -11,6 +13,8 @@ type Props = {
 };
 
 export function Chip({ label, selected = false, onPress, tone = 'neutral' }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const toneStyle = {
     neutral: styles.neutral,
     success: styles.success,
@@ -52,13 +56,14 @@ export function Chip({ label, selected = false, onPress, tone = 'neutral' }: Pro
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   base: {
     alignSelf: 'flex-start',
     alignItems: 'center',
     borderRadius: radius.pill,
-    borderColor: colors.stickerOutline,
-    borderWidth: 2,
+    borderColor: colors.border,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -77,4 +82,5 @@ const styles = StyleSheet.create({
   successLabel: { color: colors.successText },
   warning: { backgroundColor: colors.warningSoft },
   warningLabel: { color: colors.warningText },
-});
+  });
+}

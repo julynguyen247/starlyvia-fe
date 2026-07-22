@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '../theme/tokens';
+import { useAppTheme } from '../context/ThemeContext';
 
 export function DreamyBackdrop() {
+  const { colors } = useAppTheme();
   return (
     <View
       accessibilityElementsHidden

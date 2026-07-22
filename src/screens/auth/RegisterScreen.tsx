@@ -5,7 +5,8 @@ import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
 import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../services/apiClient';
-import { colors, spacing, typography } from '../../theme/tokens';
+import { spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { AuthScreenProps } from '../../types/navigation';
 import { isEmail } from '../../utils/validation';
 import { AuthShell } from './AuthShell';
@@ -13,6 +14,7 @@ import { AuthShell } from './AuthShell';
 type Errors = { username?: string; email?: string; password?: string };
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
+  const styles = useThemedStyles(createStyles);
   const { register, isSubmitting } = useAuth();
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -114,9 +116,11 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   link: { color: colors.primary, fontSize: typography.small, fontWeight: '800' },
   linkButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44 },
   prompt: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },
   promptText: { color: colors.textMuted, fontSize: typography.small },
-});
+  });
+}
