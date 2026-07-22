@@ -93,10 +93,10 @@ function createStyles(colors: ThemeColors) {
   inputFocused: { borderColor: colors.primary },
   inputShell: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceWarm,
+    backgroundColor: colors.surface,
     borderColor: colors.controlBorder,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,

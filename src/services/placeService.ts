@@ -1,4 +1,4 @@
-import type { PlaceDetails, PlaceSuggestion } from '../types/api';
+import type { PlaceDetails, PlaceProvider, PlaceSuggestion } from '../types/api';
 import { queryString, request } from './apiClient';
 
 export const placeService = {
@@ -7,9 +7,9 @@ export const placeService = {
       `/api/v1/places/autocomplete${queryString({ query, limit: 8, sessionToken })}`,
     );
   },
-  details(providerPlaceId: string) {
+  details(provider: PlaceProvider, providerPlaceId: string) {
     return request<PlaceDetails>(
-      `/api/v1/places/details${queryString({ provider: 'GOOGLE', providerPlaceId })}`,
+      `/api/v1/places/details${queryString({ provider, providerPlaceId })}`,
     );
   },
   nearby(latitude: number, longitude: number) {

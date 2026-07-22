@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
 import { useAppTheme } from '../context/ThemeContext';
@@ -12,12 +11,9 @@ export function DreamyBackdrop() {
       pointerEvents="none"
       style={styles.backdrop}
     >
-      <Ionicons color={colors.cloudSky} name="cloud" size={224} style={styles.cloudTop} />
-      <Ionicons color={colors.cloudLavender} name="cloud-outline" size={178} style={styles.cloudMiddle} />
-      <Ionicons color={colors.cloudPeach} name="cloud" size={252} style={styles.cloudBottom} />
-      <Ionicons color={colors.cloudGlow} name="sparkles" size={22} style={styles.sparkleTop} />
-      <Ionicons color={colors.accent} name="sparkles-outline" size={18} style={styles.sparkleMiddle} />
-      <Ionicons color={colors.primary} name="airplane-outline" size={20} style={styles.plane} />
+      <View style={[styles.dot, styles.dotPrimary, { backgroundColor: colors.primary }]} />
+      <View style={[styles.dot, styles.dotAccent, { backgroundColor: colors.accent }]} />
+      <View style={[styles.dot, styles.dotWarm, { backgroundColor: colors.tertiary }]} />
     </View>
   );
 }
@@ -31,10 +27,8 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
   },
-  cloudBottom: { bottom: -72, left: -84, opacity: 0.5, position: 'absolute' },
-  cloudMiddle: { opacity: 0.35, position: 'absolute', right: -52, top: '43%' },
-  cloudTop: { opacity: 0.56, position: 'absolute', right: -64, top: 54 },
-  plane: { left: 28, opacity: 0.16, position: 'absolute', top: '28%', transform: [{ rotate: '-18deg' }] },
-  sparkleMiddle: { left: 34, opacity: 0.48, position: 'absolute', top: '40%' },
-  sparkleTop: { opacity: 0.72, position: 'absolute', right: 38, top: 40 },
+  dot: { borderRadius: 99, opacity: 0.34, position: 'absolute' },
+  dotAccent: { height: 7, right: 34, top: 34, width: 7 },
+  dotPrimary: { height: 11, right: 54, top: 54, width: 11 },
+  dotWarm: { height: 5, right: 24, top: 70, width: 5 },
 });

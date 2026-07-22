@@ -37,6 +37,6 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
   avatar: { borderColor: colors.surface, borderWidth: 2, ...shadows },
   fallback: { alignItems: 'center', backgroundColor: colors.primarySoft, justifyContent: 'center' },
-  initials: { color: colors.primary, fontWeight: '800' },
+  initials: { color: colors.text, fontWeight: '800' },
   });
 }

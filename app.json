@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/illustrations/launch-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0C1511"
+      "backgroundColor": "#121114"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,16 +19,17 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/illustrations/launch-mark.png",
-        "backgroundColor": "#142019"
+        "backgroundColor": "#251C2D"
       },
       "package": "com.starlyvia.mobile"
     },
     "androidStatusBar": {
-      "backgroundColor": "#0C1511",
+      "backgroundColor": "#121114",
       "barStyle": "light-content"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "@maplibre/maplibre-react-native"
     ]
   }
 }

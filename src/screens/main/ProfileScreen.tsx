@@ -90,7 +90,7 @@ export function ProfileScreen() {
                 ]}
               >
                 <View style={[styles.themeIcon, selected && styles.themeIconSelected]}>
-                  <Ionicons color={selected ? colors.white : colors.textMuted} name={option.icon} size={22} />
+                  <Ionicons color={selected ? colors.heroText : colors.textMuted} name={option.icon} size={22} />
                 </View>
                 <Text style={[styles.themeLabel, selected && styles.themeLabelSelected]}>{option.label}</Text>
                 <Text style={[styles.themeDescription, selected && styles.themeDescriptionSelected]}>{option.description}</Text>
@@ -177,6 +177,6 @@ function createStyles(colors: ThemeColors) {
     themeOption: { alignItems: 'center', backgroundColor: colors.surfaceMuted, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, gap: spacing.sm, minHeight: 132, minWidth: 94, padding: spacing.md },
     themeOptionSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
     themeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-    value: { color: colors.primary, fontSize: typography.small, fontWeight: '800' },
+    value: { color: colors.primaryText, fontSize: typography.small, fontWeight: '800' },
   });
 }

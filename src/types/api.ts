@@ -152,8 +152,10 @@ export type PlanRoute = {
   legs: RouteLeg[];
 };
 
+export type PlaceProvider = 'GOOGLE' | 'GEOAPIFY';
+
 export type PlaceSuggestion = {
-  provider: 'GOOGLE';
+  provider: PlaceProvider;
   providerPlaceId: string | null;
   name: string | null;
   address: string | null;
@@ -161,7 +163,7 @@ export type PlaceSuggestion = {
 };
 
 export type PlaceDetails = {
-  provider: 'GOOGLE';
+  provider: PlaceProvider;
   providerPlaceId: string | null;
   name: string | null;
   address: string | null;

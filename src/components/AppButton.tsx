@@ -79,7 +79,7 @@ function createStyles(_colors: ThemeColors) {
   return StyleSheet.create({
   base: {
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
@@ -93,7 +93,7 @@ function createStyles(_colors: ThemeColors) {
   },
   disabled: { elevation: 0, opacity: 0.52, shadowOpacity: 0 },
   label: { fontSize: typography.body, fontWeight: '700' },
-  pressed: { opacity: 0.9, transform: [{ translateY: 2 }, { scale: 0.98 }] },
+  pressed: { opacity: 0.92, transform: [{ translateY: 1 }, { scale: 0.975 }] },
   raised: { ...shadows },
   });
 }

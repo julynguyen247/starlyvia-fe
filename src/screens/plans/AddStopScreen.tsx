@@ -1,34 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Region } from 'react-native-maps';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
 import { ResponsiveFieldRow } from '../../components/ResponsiveFieldRow';
 import { Screen } from '../../components/Screen';
-import { ScreenIntro } from '../../components/ScreenIntro';
+import { TravelScene } from '../../components/TravelScene';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { placeService } from '../../services/placeService';
 import { planService } from '../../services/planService';
-import { radius, spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { radius, shadows, spacing, stickerPalette, typography, type ThemeColors } from '../../theme/tokens';
 import type { PlaceDetails, PlaceSuggestion, RouteCoordinate } from '../../types/api';
 import type { RootScreenProps } from '../../types/navigation';
 import { createSessionId } from '../../utils/id';
 import { isTime } from '../../utils/validation';
-import { PlaceMapPicker } from './PlaceMapPicker';
+import { PlaceMapPicker, type MapViewport } from './PlaceMapPicker';
 
 type Errors = Partial<Record<'query' | 'arrivalTime' | 'departureTime', string>>;
 type PickerMode = 'search' | 'map';
 type UsablePlaceSuggestion = PlaceSuggestion & { name: string; providerPlaceId: string };
 type SelectedPlace = PlaceDetails & { name: string };
 
-const initialMapRegion: Region = {
+const initialMapViewport: MapViewport = {
   latitude: 20,
-  latitudeDelta: 105,
   longitude: 0,
-  longitudeDelta: 105,
+  zoom: 1.4,
 };
 
 function normalizeSuggestion(suggestion: PlaceSuggestion): UsablePlaceSuggestion | null {
@@ -47,6 +45,12 @@ function normalizePlace(place: PlaceDetails): SelectedPlace | null {
   } : null;
 }
 
+function openProviderUrl(url: string) {
+  void Linking.openURL(url).catch(() => {
+    Alert.alert('Could not open link', 'Please try again in a moment.');
+  });
+}
+
 export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>) {
   const { planId, nextOrderIndex } = route.params;
   const { colors } = useAppTheme();
@@ -57,7 +61,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
   const [suggestions, setSuggestions] = useState<UsablePlaceSuggestion[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null);
   const [selectedCoordinate, setSelectedCoordinate] = useState<RouteCoordinate | null>(null);
-  const [mapRegion, setMapRegion] = useState<Region>(initialMapRegion);
+  const [mapViewport, setMapViewport] = useState<MapViewport>(initialMapViewport);
   const [nearbyPlaces, setNearbyPlaces] = useState<SelectedPlace[]>([]);
   const [address, setAddress] = useState('');
   const [arrivalTime, setArrivalTime] = useState('10:00');
@@ -140,6 +144,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
     setErrors((current) => ({ ...current, query: undefined }));
     if (normalizedPlace.latitude !== null && normalizedPlace.longitude !== null) {
       setSelectedCoordinate({ latitude: normalizedPlace.latitude, longitude: normalizedPlace.longitude });
+      if (errorTarget === 'search') setPickerMode('map');
     } else {
       setSelectedCoordinate(null);
     }
@@ -150,7 +155,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
     setSelecting(true);
     setSearchError(null);
     try {
-      const details = await placeService.details(suggestion.providerPlaceId);
+      const details = await placeService.details(suggestion.provider, suggestion.providerPlaceId);
       if (!mountedRef.current || generation !== detailsRequestGeneration.current) return;
       applyCatalogPlace(details, 'search');
     } catch (error) {
@@ -182,7 +187,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
     setExploring(true);
     setNearbyError(null);
     try {
-      const places = await placeService.nearby(mapRegion.latitude, mapRegion.longitude);
+      const places = await placeService.nearby(mapViewport.latitude, mapViewport.longitude);
       if (!mountedRef.current || generation !== nearbyRequestGeneration.current) return;
       const mappablePlaces = places.flatMap((place) => {
         const normalizedPlace = normalizePlace(place);
@@ -244,6 +249,8 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
     detailsRequestGeneration.current += 1;
     setSelecting(false);
     setCompletedQuery(null);
+    setSearchError(null);
+    setSuggestions([]);
     setErrors((current) => ({ ...current, query: undefined }));
     if (selectedPlace && value !== selectedPlace.name) {
       setSelectedPlace(null);
@@ -261,12 +268,12 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
     setPickerMode(mode);
   }
 
-  function updateMapRegion(region: Region) {
+  function updateMapViewport(viewport: MapViewport) {
     nearbyRequestGeneration.current += 1;
     setExploring(false);
     setNearbyPlaces([]);
     setNearbyError(null);
-    setMapRegion(region);
+    setMapViewport(viewport);
   }
 
   const showNoResults = completedQuery === query.trim()
@@ -279,11 +286,18 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
 
   return (
     <Screen safeTop={false}>
-      <ScreenIntro
-        scene="place"
-        subtitle="Drop a pin, explore the neighborhood, or search by name."
-        title="Choose the next stop"
-      />
+      <View style={styles.hero}>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.heroGlow} />
+        <View style={styles.heroCopy}>
+          <View style={styles.heroEyebrow}>
+            <Ionicons color={colors.onSticker} name="navigate" size={14} />
+            <Text style={styles.heroEyebrowText}>NEXT ADVENTURE</Text>
+          </View>
+          <Text accessibilityRole="header" style={styles.heroTitle}>Pin the perfect place.</Text>
+          <Text style={styles.heroSubtitle}>Roam the map, discover nearby gems, or search for a favorite.</Text>
+        </View>
+        <TravelScene scene="place" size={118} style={styles.heroScene} />
+      </View>
 
       <View accessibilityLabel="Place selection method" accessibilityRole="tablist" style={styles.modeSwitch}>
         {([
@@ -299,25 +313,45 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
               onPress={() => choosePickerMode(item.value)}
               style={({ pressed }) => [styles.mode, active && styles.modeActive, pressed && styles.pressed]}
             >
-              <Ionicons color={active ? colors.onPrimary : colors.textMuted} name={item.icon} size={19} />
+              <Ionicons color={active ? colors.onSticker : colors.heroTextMuted} name={item.icon} size={19} />
               <Text style={[styles.modeText, active && styles.modeTextActive]}>{item.label}</Text>
             </Pressable>
           );
         })}
+      </View>
+      <View accessibilityLabel="Map and search providers" style={styles.attribution}>
+        <Text style={styles.attributionText}>Maps </Text>
+        <Pressable
+          accessibilityLabel="Open OpenStreetMap copyright information"
+          accessibilityRole="link"
+          onPress={() => openProviderUrl('https://www.openstreetmap.org/copyright')}
+        >
+          <Text style={styles.attributionLink}>© OpenStreetMap contributors</Text>
+        </Pressable>
+        <Text style={styles.attributionText}> · </Text>
+        <Pressable
+          accessibilityLabel="Open Geoapify website"
+          accessibilityRole="link"
+          onPress={() => openProviderUrl('https://www.geoapify.com/')}
+        >
+          <Text style={styles.attributionLink}>Powered by Geoapify</Text>
+        </Pressable>
       </View>
 
       {pickerMode === 'map' ? (
         <View style={styles.mapSection}>
           <PlaceMapPicker
             nearbyPlaces={nearbyPlaces}
-            onRegionChange={updateMapRegion}
             onSelectCoordinate={selectMapCoordinate}
             onSelectPlace={applyCatalogPlace}
+            onViewportChange={updateMapViewport}
             selectedCoordinate={selectedCoordinate}
           />
+          {selectedPlace ? <SelectedPlaceCard colors={colors} place={selectedPlace} styles={styles} /> : null}
           <View style={styles.mapActions}>
             <View style={styles.mapCopy}>
-              <Text style={styles.mapTitle}>{selectedCoordinate ? 'Pin ready' : 'Find your neighborhood'}</Text>
+              <Text style={styles.mapEyebrow}>{selectedCoordinate ? 'PIN READY' : 'EXPLORE MODE'}</Text>
+              <Text style={styles.mapTitle}>{selectedCoordinate ? 'This spot looks good' : 'Find your neighborhood'}</Text>
               <Text style={styles.mapSubtitle}>
                 {selectedCoordinate
                   ? `${selectedCoordinate.latitude.toFixed(5)}, ${selectedCoordinate.longitude.toFixed(5)}`
@@ -348,6 +382,9 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
       ) : (
         <>
           <AppInput editable={!submitting} autoCapitalize="words" error={errors.query} icon="search-outline" label="Place" onChangeText={updateQuery} placeholder="Search cafes, landmarks, hotels…" value={query} />
+          {selectedPlace && !selectedCoordinate ? (
+            <SelectedPlaceCard colors={colors} place={selectedPlace} styles={styles} />
+          ) : null}
           {searching || selecting ? (
             <View accessibilityLabel={selecting ? 'Opening place' : 'Searching places'} accessibilityLiveRegion="polite" accessibilityState={{ busy: true }} style={styles.searching}>
               <ActivityIndicator color={colors.primary} />
@@ -356,7 +393,9 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
           ) : null}
           {searchError ? (
             <View accessibilityLiveRegion="polite" style={styles.searchErrorCard}>
-              <Ionicons color={colors.warning} name="cloud-offline-outline" size={22} />
+              <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.searchErrorIcon}>
+                <Ionicons color={colors.warningText} name="cloud-offline-outline" size={21} />
+              </View>
               <Text style={styles.searchError}>{searchError} You can still switch to the map or add this stop manually.</Text>
             </View>
           ) : null}
@@ -387,17 +426,6 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
           ) : null}
         </>
       )}
-
-      {selectedPlace ? (
-        <View accessibilityLabel={`${selectedPlace.name} matched from the place catalog`} accessibilityLiveRegion="polite" style={styles.selected}>
-          <View style={styles.selectedStamp}><Ionicons color={colors.success} name="checkmark" size={22} /></View>
-          <View style={styles.selectedCopy}>
-            <Text style={styles.selectedTitle}>Place matched</Text>
-            <Text style={styles.selectedMeta}>{selectedPlace.address || 'Address unavailable'}</Text>
-          </View>
-          {selectedPlace.rating ? <Text style={styles.rating}>★ {selectedPlace.rating}</Text> : null}
-        </View>
-      ) : null}
 
       <View style={styles.detailsCard}>
         <View style={styles.detailsHeading}>
@@ -439,7 +467,7 @@ function PlaceResult({ address, colors, disabled, name, onPress, selected, style
       onPress={onPress}
       style={({ pressed }) => [styles.result, selected && styles.resultSelected, pressed && styles.pressed]}
     >
-      <View style={styles.resultIcon}><Ionicons color={colors.primary} name="location" size={19} /></View>
+      <View style={styles.resultIcon}><Ionicons color={colors.onSticker} name="location" size={19} /></View>
       <View style={styles.resultCopy}>
         <Text numberOfLines={1} style={styles.resultName}>{name}</Text>
         <Text numberOfLines={2} style={styles.resultAddress}>{address}</Text>
@@ -449,49 +477,138 @@ function PlaceResult({ address, colors, disabled, name, onPress, selected, style
   );
 }
 
+type SelectedPlaceCardProps = {
+  colors: ThemeColors;
+  place: SelectedPlace;
+  styles: ReturnType<typeof createStyles>;
+};
+
+function SelectedPlaceCard({ colors, place, styles }: SelectedPlaceCardProps) {
+  return (
+    <View accessibilityLabel={`${place.name} matched from the place catalog`} accessibilityLiveRegion="polite" style={styles.selected}>
+      <View style={styles.selectedStamp}><Ionicons color={colors.onSticker} name="checkmark" size={20} /></View>
+      <View style={styles.selectedCopy}>
+        <Text style={styles.selectedEyebrow}>PLACE LOCKED IN</Text>
+        <Text numberOfLines={1} style={styles.selectedTitle}>{place.name}</Text>
+        <Text numberOfLines={2} style={styles.selectedMeta}>{place.address || 'Address unavailable'}</Text>
+      </View>
+      {place.rating ? <Text style={styles.rating}>★ {place.rating}</Text> : null}
+    </View>
+  );
+}
+
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    detailsCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.lg, padding: spacing.lg },
+    attribution: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      marginTop: -spacing.sm,
+    },
+    attributionLink: { color: colors.primaryText, fontSize: 10, fontWeight: '800', lineHeight: 18, textDecorationLine: 'underline' },
+    attributionText: { color: colors.textMuted, fontSize: 10, lineHeight: 18 },
+    detailsCard: {
+      backgroundColor: colors.surface,
+      borderColor: stickerPalette.violet,
+      borderRadius: radius.lg,
+      borderTopWidth: 3,
+      gap: spacing.md,
+      padding: spacing.lg,
+      ...shadows,
+    },
     detailsHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
     detailsHeadingCopy: { flex: 1, gap: spacing.xs },
-    detailsIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 46, justifyContent: 'center', width: 46 },
+    detailsIcon: { alignItems: 'center', backgroundColor: stickerPalette.violet, borderRadius: radius.md, height: 44, justifyContent: 'center', width: 44 },
     detailsSubtitle: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
     detailsTitle: { color: colors.text, fontSize: typography.heading, fontWeight: '900' },
-    mapActions: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, justifyContent: 'space-between' },
+    hero: {
+      alignItems: 'center',
+      backgroundColor: colors.primaryDark,
+      borderColor: stickerPalette.violet,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      minHeight: 176,
+      overflow: 'hidden',
+      padding: spacing.lg,
+      ...shadows,
+    },
+    heroCopy: { flex: 1, gap: spacing.sm, minWidth: 174, zIndex: 1 },
+    heroEyebrow: {
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      backgroundColor: stickerPalette.green,
+      borderRadius: radius.pill,
+      flexDirection: 'row',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+    },
+    heroEyebrowText: { color: colors.onSticker, fontSize: 10, fontWeight: '900', letterSpacing: 0.9 },
+    heroGlow: {
+      backgroundColor: stickerPalette.violet,
+      borderRadius: radius.pill,
+      height: 190,
+      opacity: 0.16,
+      position: 'absolute',
+      right: -48,
+      top: -70,
+      width: 190,
+    },
+    heroScene: { marginBottom: -spacing.md, marginRight: -spacing.md, marginTop: -spacing.md },
+    heroSubtitle: { color: colors.heroTextMuted, fontSize: typography.small, lineHeight: 20 },
+    heroTitle: { color: colors.heroText, fontSize: typography.title, fontWeight: '900', letterSpacing: -0.7, lineHeight: 31 },
+    mapActions: {
+      alignItems: 'center',
+      backgroundColor: colors.primaryDark,
+      borderColor: stickerPalette.violet,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+      justifyContent: 'space-between',
+      padding: spacing.md,
+    },
     mapCopy: { flex: 1, gap: spacing.xs, minWidth: 180 },
     mapSection: { gap: spacing.md },
-    mapSubtitle: { color: colors.textMuted, fontSize: typography.caption, lineHeight: 18 },
-    mapTitle: { color: colors.text, fontSize: typography.body, fontWeight: '900' },
+    mapEyebrow: { color: stickerPalette.green, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+    mapSubtitle: { color: colors.heroTextMuted, fontSize: typography.caption, lineHeight: 18 },
+    mapTitle: { color: colors.heroText, fontSize: typography.body, fontWeight: '900' },
     mode: { alignItems: 'center', borderRadius: radius.pill, flex: 1, flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', minHeight: 46, paddingHorizontal: spacing.md },
-    modeActive: { backgroundColor: colors.primary },
-    modeSwitch: { backgroundColor: colors.surfaceMuted, borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, padding: spacing.xs },
-    modeText: { color: colors.textMuted, fontSize: typography.small, fontWeight: '800' },
-    modeTextActive: { color: colors.onPrimary },
-    nearbyError: { backgroundColor: colors.warningSoft, borderRadius: radius.md, color: colors.warningText, fontSize: typography.small, lineHeight: 20, padding: spacing.md },
-    nearbyList: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden' },
-    nearbyTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900', padding: spacing.md },
-    noResults: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+    modeActive: { backgroundColor: stickerPalette.violet },
+    modeSwitch: { backgroundColor: colors.primaryDark, borderColor: stickerPalette.violet, borderRadius: radius.pill, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, padding: spacing.xs },
+    modeText: { color: colors.heroTextMuted, fontSize: typography.small, fontWeight: '800' },
+    modeTextActive: { color: colors.onSticker },
+    nearbyError: { backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.md, borderWidth: 1, color: colors.warningText, fontSize: typography.small, lineHeight: 21, padding: spacing.md },
+    nearbyList: { backgroundColor: colors.surface, borderColor: stickerPalette.green, borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden' },
+    nearbyTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900', letterSpacing: 0.3, padding: spacing.md },
+    noResults: { alignItems: 'center', backgroundColor: colors.surface, borderColor: stickerPalette.violet, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
     noResultsCopy: { flex: 1, gap: spacing.xs },
     noResultsText: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
     noResultsTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900' },
     pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
-    rating: { color: colors.warningText, fontSize: typography.small, fontWeight: '900' },
-    result: { alignItems: 'center', borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: spacing.md, minHeight: 70, padding: spacing.md },
+    rating: { backgroundColor: stickerPalette.coral, borderRadius: radius.pill, color: colors.onSticker, fontSize: typography.caption, fontWeight: '900', overflow: 'hidden', paddingHorizontal: spacing.sm, paddingVertical: 6 },
+    result: { alignItems: 'center', borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: spacing.md, minHeight: 66, padding: spacing.md },
     resultAddress: { color: colors.textMuted, fontSize: typography.caption, lineHeight: 17 },
     resultCopy: { flex: 1, gap: 3 },
-    resultIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.sm, height: 42, justifyContent: 'center', width: 42 },
+    resultIcon: { alignItems: 'center', backgroundColor: stickerPalette.green, borderRadius: radius.sm, height: 40, justifyContent: 'center', width: 40 },
     resultName: { color: colors.text, fontSize: typography.small, fontWeight: '800' },
-    resultSelected: { backgroundColor: colors.successSoft },
-    results: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden' },
+    resultSelected: { backgroundColor: colors.surfaceWarm, borderLeftColor: stickerPalette.coral, borderLeftWidth: 4 },
+    results: { backgroundColor: colors.surface, borderColor: stickerPalette.violet, borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden' },
     resultsTitle: { color: colors.text, fontSize: typography.small, fontWeight: '900', padding: spacing.md },
-    searchError: { color: colors.warningText, flex: 1, fontSize: typography.small, lineHeight: 20 },
-    searchErrorCard: { alignItems: 'center', backgroundColor: colors.warningSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
-    searching: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', minHeight: 44 },
+    searchError: { color: colors.warningText, flex: 1, fontSize: typography.small, fontWeight: '600', lineHeight: 21 },
+    searchErrorCard: { alignItems: 'flex-start', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+    searchErrorIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.pill, height: 38, justifyContent: 'center', width: 38 },
+    searching: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', minHeight: 48 },
     searchingText: { color: colors.text, fontSize: typography.small, fontWeight: '700' },
-    selected: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+    selected: { alignItems: 'center', backgroundColor: colors.primaryDark, borderColor: stickerPalette.coral, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md, ...shadows },
     selectedCopy: { flex: 1, gap: spacing.xs },
-    selectedMeta: { color: colors.textMuted, fontSize: typography.caption, lineHeight: 18 },
-    selectedStamp: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.pill, height: 44, justifyContent: 'center', width: 44 },
-    selectedTitle: { color: colors.successText, fontSize: typography.small, fontWeight: '900' },
+    selectedEyebrow: { color: stickerPalette.green, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+    selectedMeta: { color: colors.heroTextMuted, fontSize: typography.caption, lineHeight: 18 },
+    selectedStamp: { alignItems: 'center', backgroundColor: stickerPalette.coral, borderRadius: radius.pill, height: 42, justifyContent: 'center', width: 42 },
+    selectedTitle: { color: colors.heroText, fontSize: typography.body, fontWeight: '900' },
   });
 }

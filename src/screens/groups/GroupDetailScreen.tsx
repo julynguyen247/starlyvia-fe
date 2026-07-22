@@ -358,7 +358,7 @@ function createStyles(colors: ThemeColors) {
   },
   inviteCopy: { color: colors.textMuted, fontSize: typography.small, lineHeight: 20 },
   inviteEyebrow: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: typography.caption,
     fontWeight: '900',
     letterSpacing: 1,
