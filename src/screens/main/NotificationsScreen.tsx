@@ -291,7 +291,7 @@ function createStyles(colors: ThemeColors) {
   time: { color: colors.textMuted, fontSize: typography.caption, fontWeight: '600', marginTop: spacing.xs },
   unreadDot: { backgroundColor: colors.accent, borderRadius: 4, height: 8, width: 8 },
   unreadCopy: { flex: 1, gap: 2 },
-  unreadCount: { color: colors.primary, fontSize: typography.heading, fontWeight: '900' },
+  unreadCount: { color: colors.primaryText, fontSize: typography.heading, fontWeight: '900' },
   unreadLabel: { color: colors.textMuted, fontSize: typography.caption, fontWeight: '700' },
   unreadSignal: { backgroundColor: colors.accent, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 1, height: 18, width: 18 },
   unreadSummary: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.md },

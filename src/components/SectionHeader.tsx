@@ -25,7 +25,7 @@ export function SectionHeader({ title, actionLabel, onAction }: Props) {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-  action: { color: colors.primary, fontFamily: fontFamilies.display, fontSize: typography.small, fontWeight: '800' },
+  action: { color: colors.primaryText, fontFamily: fontFamilies.display, fontSize: typography.small, fontWeight: '800' },
   actionButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingHorizontal: spacing.sm },
   row: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, justifyContent: 'space-between' },
   title: { color: colors.text, flex: 1, fontFamily: fontFamilies.display, fontSize: typography.heading, fontWeight: '900', letterSpacing: -0.35, minWidth: 180 },

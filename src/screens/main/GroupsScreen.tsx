@@ -188,7 +188,7 @@ function createStyles(colors: ThemeColors) {
   },
   ticketCopy: { flex: 1, gap: spacing.xs, minWidth: 150 },
   ticketEyebrow: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: typography.caption,
     fontWeight: '900',
     letterSpacing: 1,

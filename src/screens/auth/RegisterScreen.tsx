@@ -118,7 +118,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-  link: { color: colors.primary, fontSize: typography.small, fontWeight: '800' },
+  link: { color: colors.primaryText, fontSize: typography.small, fontWeight: '800' },
   linkButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44 },
   prompt: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },
   promptText: { color: colors.textMuted, fontSize: typography.small },
