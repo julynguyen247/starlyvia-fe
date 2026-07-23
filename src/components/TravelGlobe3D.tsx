@@ -1,7 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { Component, type ReactNode, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import * as THREE from 'three';
+import type { Group } from 'three';
 
 import { useAppTheme } from '../context/ThemeContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -81,20 +81,24 @@ function LocationPin({ ink }: { ink: string }) {
 }
 
 function PaperPlane() {
-  const shape = useMemo(() => {
-    const plane = new THREE.Shape();
-    plane.moveTo(-0.28, -0.13);
-    plane.lineTo(0.32, 0);
-    plane.lineTo(-0.24, 0.19);
-    plane.lineTo(-0.08, 0.02);
-    plane.closePath();
-    return plane;
-  }, []);
+  const vertices = useMemo(
+    () => new Float32Array([
+      0.32, 0, 0,
+      -0.24, 0.19, 0,
+      -0.08, 0.02, 0.04,
+      0.32, 0, 0,
+      -0.08, 0.02, 0.04,
+      -0.28, -0.13, 0,
+    ]),
+    [],
+  );
 
   return (
     <mesh position={[0.82, 0.68, 0.54]} rotation={[0.18, -0.22, -0.3]}>
-      <extrudeGeometry args={[shape, { bevelEnabled: true, bevelSize: 0.018, bevelThickness: 0.025, depth: 0.05 }]} />
-      <meshStandardMaterial color={stickerPalette.coral} roughness={0.66} />
+      <bufferGeometry>
+        <bufferAttribute args={[vertices, 3]} attach="attributes-position" />
+      </bufferGeometry>
+      <meshBasicMaterial color={stickerPalette.coral} side={2} />
     </mesh>
   );
 }
@@ -135,7 +139,7 @@ function GlobeModel({
   allowMotion: boolean;
   palette: GlobePalette;
 }) {
-  const globe = useRef<THREE.Group>(null);
+  const globe = useRef<Group>(null);
 
   useFrame((_, delta) => {
     const model = globe.current;
