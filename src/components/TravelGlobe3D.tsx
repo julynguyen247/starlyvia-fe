@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { Component, type ReactNode, useMemo, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { PanResponder, StyleSheet, View } from 'react-native';
 import type { Group } from 'three';
 
 import { useAppTheme } from '../context/ThemeContext';
@@ -26,6 +27,16 @@ type GlobePalette = {
   globe: string;
   ink: string;
   land: string;
+};
+
+type RotationControl = {
+  dragStart: number;
+  dragging: boolean;
+  target: number;
+};
+
+type RotationControlRef = {
+  current: RotationControl;
 };
 
 class SceneBoundary extends Component<BoundaryProps, BoundaryState> {
@@ -134,10 +145,12 @@ function GlobeModel({
   active,
   allowMotion,
   palette,
+  rotationControl,
 }: {
   active: boolean;
   allowMotion: boolean;
   palette: GlobePalette;
+  rotationControl: RotationControlRef;
 }) {
   const globe = useRef<Group>(null);
   const phase = useRef(0);
@@ -146,10 +159,16 @@ function GlobeModel({
     const model = globe.current;
     if (!model) return;
 
-    if (active && allowMotion) {
+    if (active && allowMotion && !rotationControl.current.dragging) {
       phase.current += delta * 0.42;
-      model.rotation.y = 0.35 + Math.sin(phase.current) * 0.42;
     }
+
+    const idleSway = active && allowMotion && !rotationControl.current.dragging
+      ? Math.sin(phase.current) * 0.12
+      : 0;
+    const target = rotationControl.current.target + idleSway;
+    const easing = 1 - Math.exp(-delta * 14);
+    model.rotation.y += (target - model.rotation.y) * easing;
   });
 
   return (
@@ -192,6 +211,36 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
   const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
   const allowMotion = reducedMotion === false;
+  const rotationControl = useRef<RotationControl>({
+    dragStart: 0.35,
+    dragging: false,
+    target: 0.35,
+  });
+  const panResponder = useMemo(
+    () => PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => (
+        active
+        && Math.abs(gesture.dx) > 8
+        && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2
+      ),
+      onPanResponderGrant: () => {
+        rotationControl.current.dragStart = rotationControl.current.target;
+        rotationControl.current.dragging = true;
+      },
+      onPanResponderMove: (_, gesture) => {
+        rotationControl.current.target = rotationControl.current.dragStart + gesture.dx * 0.012;
+      },
+      onPanResponderRelease: (_, gesture) => {
+        rotationControl.current.target += gesture.vx * 0.35;
+        rotationControl.current.dragging = false;
+      },
+      onPanResponderTerminate: () => {
+        rotationControl.current.dragging = false;
+      },
+      onStartShouldSetPanResponder: () => false,
+    }),
+    [active],
+  );
   const fallback = <TravelScene animated={false} scene="crew" size={size} />;
   const palette: GlobePalette = {
     globe: stickerPalette.violet,
@@ -201,15 +250,23 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
 
   return (
     <View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
+      accessibilityActions={[{ name: 'decrement' }, { name: 'increment' }]}
+      accessibilityHint="Swipe left or right to rotate the globe"
+      accessibilityLabel="Interactive 3D travel globe"
+      accessibilityRole="adjustable"
+      accessible
+      onAccessibilityAction={({ nativeEvent }) => {
+        const direction = nativeEvent.actionName === 'increment' ? 1 : -1;
+        rotationControl.current.target += direction * (Math.PI / 3);
+      }}
       style={[styles.container, { height: size, width: size }]}
+      {...panResponder.panHandlers}
     >
       <SceneBoundary fallback={fallback}>
         <Canvas
           camera={{ far: 20, fov: 36, near: 0.1, position: [0, 0, 4.2] }}
           flat
-          frameloop={active && allowMotion ? 'always' : 'demand'}
+          frameloop={active ? 'always' : 'demand'}
           gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
           onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
           pointerEvents="none"
@@ -218,9 +275,25 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
           <ambientLight intensity={1.8} />
           <directionalLight intensity={3.2} position={[3, 4, 5]} />
           <directionalLight color={stickerPalette.violet} intensity={1.1} position={[-3, -1, 2]} />
-          <GlobeModel active={active} allowMotion={allowMotion} palette={palette} />
+          <GlobeModel
+            active={active}
+            allowMotion={allowMotion}
+            palette={palette}
+            rotationControl={rotationControl}
+          />
         </Canvas>
       </SceneBoundary>
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        pointerEvents="none"
+        style={[
+          styles.dragHint,
+          { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+        ]}
+      >
+        <Ionicons color={colors.primary} name="move-outline" size={15} />
+      </View>
     </View>
   );
 }
@@ -228,4 +301,15 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
 const styles = StyleSheet.create({
   canvas: { height: '100%', width: '100%' },
   container: { alignItems: 'center', justifyContent: 'center' },
+  dragHint: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    bottom: 3,
+    height: 24,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 3,
+    width: 30,
+  },
 });
