@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -11,6 +11,7 @@ import { PlanCard } from '../../components/PlanCard';
 import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
 import { StateView } from '../../components/StateView';
+import { TravelGlobe3D } from '../../components/TravelGlobe3D';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
@@ -32,6 +33,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   const { colors } = useAppTheme();
   const styles = useThemedStyles(createStyles);
   const { user } = useAuth();
+  const isFocused = useIsFocused();
   const [groups, setGroups] = useState<Group[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -203,8 +205,8 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
       <PlayfulHero
         description="Gather your favorite people, then turn ideas into an itinerary."
         eyebrow="YOUR TRAVEL UNIVERSE"
-        scene="world"
         title="Where will your crew go next?"
+        visual={<TravelGlobe3D active={isFocused} />}
       >
         <AppButton
           compact

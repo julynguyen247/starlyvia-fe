@@ -15,11 +15,12 @@ type Props = {
   eyebrow?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   scene?: TravelSceneName;
+  visual?: ReactNode;
   badge?: ReactNode;
   children?: ReactNode;
 };
 
-export function PlayfulHero({ title, description, eyebrow, icon, scene, badge, children }: Props) {
+export function PlayfulHero({ title, description, eyebrow, icon, scene, visual, badge, children }: Props) {
   const { colors } = useAppTheme();
   const styles = useThemedStyles(createStyles);
   const reducedMotion = useReducedMotion();
@@ -75,7 +76,8 @@ export function PlayfulHero({ title, description, eyebrow, icon, scene, badge, c
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           {description ? <Text style={styles.description}>{description}</Text> : null}
         </View>
-        {scene ? <TravelScene animated scene={scene} size={148} style={styles.scene} /> : null}
+        {visual ? <View style={styles.scene}>{visual}</View> : null}
+        {!visual && scene ? <TravelScene animated scene={scene} size={148} style={styles.scene} /> : null}
       </View>
       {children ? <View style={styles.actions}>{children}</View> : null}
     </View>

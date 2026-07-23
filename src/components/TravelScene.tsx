@@ -21,8 +21,7 @@ export type TravelSceneName =
   | 'itinerary'
   | 'place'
   | 'success'
-  | 'launch'
-  | 'world';
+  | 'launch';
 
 const sources: Record<TravelSceneName, ImageSourcePropType> = {
   welcome: require('../../assets/illustrations/welcome-adventure.png'),
@@ -32,7 +31,6 @@ const sources: Record<TravelSceneName, ImageSourcePropType> = {
   place: require('../../assets/illustrations/friendly-place.png'),
   success: require('../../assets/illustrations/travel-success.png'),
   launch: require('../../assets/illustrations/launch-mark.png'),
-  world: require('../../assets/illustrations/travel-world-3d.png'),
 };
 
 type Props = {
