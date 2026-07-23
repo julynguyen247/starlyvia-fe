@@ -203,7 +203,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
       <PlayfulHero
         description="Gather your favorite people, then turn ideas into an itinerary."
         eyebrow="YOUR TRAVEL UNIVERSE"
-        scene="crew"
+        scene="world"
         title="Where will your crew go next?"
       >
         <AppButton
