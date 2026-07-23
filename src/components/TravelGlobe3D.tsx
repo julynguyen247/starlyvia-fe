@@ -140,12 +140,16 @@ function GlobeModel({
   palette: GlobePalette;
 }) {
   const globe = useRef<Group>(null);
+  const phase = useRef(0);
 
   useFrame((_, delta) => {
     const model = globe.current;
     if (!model) return;
 
-    if (active && allowMotion) model.rotation.y += delta * 0.22;
+    if (active && allowMotion) {
+      phase.current += delta * 0.42;
+      model.rotation.y = 0.35 + Math.sin(phase.current) * 0.42;
+    }
   });
 
   return (
@@ -192,14 +196,13 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
   const palette: GlobePalette = {
     globe: stickerPalette.violet,
     ink: colors.primary,
-    land: colors.surface,
+    land: colors.white,
   };
 
   return (
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
       style={[styles.container, { height: size, width: size }]}
     >
       <SceneBoundary fallback={fallback}>
@@ -209,6 +212,7 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
           frameloop={active && allowMotion ? 'always' : 'demand'}
           gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
           onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+          pointerEvents="none"
           style={styles.canvas}
         >
           <ambientLight intensity={1.8} />
@@ -222,6 +226,6 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
 }
 
 const styles = StyleSheet.create({
-  canvas: { flex: 1 },
+  canvas: { height: '100%', width: '100%' },
   container: { alignItems: 'center', justifyContent: 'center' },
 });

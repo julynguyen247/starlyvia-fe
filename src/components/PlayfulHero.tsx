@@ -76,7 +76,7 @@ export function PlayfulHero({ title, description, eyebrow, icon, scene, visual, 
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           {description ? <Text style={styles.description}>{description}</Text> : null}
         </View>
-        {visual ? <View style={styles.scene}>{visual}</View> : null}
+        {visual ? <View style={[styles.scene, styles.visual]}>{visual}</View> : null}
         {!visual && scene ? <TravelScene animated scene={scene} size={148} style={styles.scene} /> : null}
       </View>
       {children ? <View style={styles.actions}>{children}</View> : null}
@@ -118,5 +118,6 @@ function createStyles(colors: ThemeColors) {
   sparkles: { position: 'absolute', right: 88, top: 36 },
   title: { color: colors.heroText, fontSize: typography.title, fontWeight: '900', lineHeight: 33 },
   topRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  visual: { flexShrink: 0, height: 164, width: 164 },
   });
 }
