@@ -2,13 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Pressable,
+  StyleSheet,
   Text,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 
 import { useAppTheme } from '../context/ThemeContext';
-import { shadows } from '../theme/tokens';
+import { radius, shadows, spacing, typography, type ThemeColors } from '../theme/tokens';
+import { useThemedStyles } from '../theme/useThemedStyles';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -34,6 +36,7 @@ export function AppButton({
   style,
 }: Props) {
   const { colors } = useAppTheme();
+  const styles = useThemedStyles(createStyles);
   const variantStyles: Record<ButtonVariant, { background: string; border: string; text: string }> = {
     primary: { background: colors.primary, border: colors.primary, text: colors.onPrimary },
     secondary: { background: colors.accentSoft, border: colors.accent, text: colors.accentText },
@@ -50,11 +53,13 @@ export function AppButton({
       accessibilityState={{ busy: loading, disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
-      className={`${compact ? 'min-h-11 px-4' : 'min-h-[52px] px-6'} flex-row items-center justify-center gap-2 rounded-2xl border active:translate-y-px active:scale-[0.975] active:opacity-90 ${isDisabled ? 'opacity-50' : ''}`}
       style={({ pressed }) => [
+        styles.base,
+        compact && styles.compact,
         { backgroundColor: palette.background, borderColor: palette.border },
-        variant === 'primary' && !isDisabled ? shadows : undefined,
-        pressed ? { opacity: 0.92 } : undefined,
+        variant === 'primary' && styles.raised,
+        pressed && styles.pressed,
+        isDisabled && styles.disabled,
         style,
       ]}
     >
@@ -63,9 +68,32 @@ export function AppButton({
       ) : (
         <>
           {icon ? <Ionicons color={palette.text} name={icon} size={18} /> : null}
-          <Text className="text-base font-bold" style={{ color: palette.text }}>{label}</Text>
+          <Text style={[styles.label, { color: palette.text }]}>{label}</Text>
         </>
       )}
     </Pressable>
   );
+}
+
+function createStyles(_colors: ThemeColors) {
+  return StyleSheet.create({
+    base: {
+      alignItems: 'center',
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      justifyContent: 'center',
+      minHeight: 52,
+      paddingHorizontal: spacing.lg,
+    },
+    compact: {
+      minHeight: 44,
+      paddingHorizontal: spacing.md,
+    },
+    disabled: { elevation: 0, opacity: 0.52, shadowOpacity: 0 },
+    label: { fontSize: typography.body, fontWeight: '700' },
+    pressed: { opacity: 0.92, transform: [{ translateY: 1 }, { scale: 0.975 }] },
+    raised: { ...shadows },
+  });
 }

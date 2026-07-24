@@ -66,10 +66,7 @@ export function ProfileScreen() {
         {user?.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
       </PlayfulHero>
 
-      <View
-        className="gap-4 rounded-3xl border p-6"
-        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
-      >
+      <View style={styles.card}>
         <LanguageSwitcher />
       </View>
 

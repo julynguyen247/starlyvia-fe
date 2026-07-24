@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
+import { spacing, typography, type ThemeColors } from '../../theme/tokens';
+import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { AuthScreenProps } from '../../types/navigation';
 import { isEmail } from '../../utils/validation';
 import { AuthShell } from './AuthShell';
@@ -16,6 +18,7 @@ type Errors = { username?: string; email?: string; password?: string };
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   const { colors } = useAppTheme();
   const { t } = useLanguage();
+  const styles = useThemedStyles(createStyles);
   const { register, isSubmitting } = useAuth();
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -107,12 +110,21 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         value={password}
       />
       <AppButton label={t('register.action')} loading={isSubmitting} onPress={() => void submit()} />
-      <View className="flex-row flex-wrap items-center justify-center gap-1">
-        <Text className="text-sm" style={{ color: colors.textMuted }}>{t('register.existing')}</Text>
-        <Pressable accessibilityRole="button" className="min-h-11 items-center justify-center" onPress={() => navigation.goBack()}>
-          <Text className="text-sm font-extrabold" style={{ color: colors.primaryText }}>{t('register.signIn')}</Text>
+      <View style={styles.prompt}>
+        <Text style={styles.promptText}>{t('register.existing')}</Text>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.linkButton}>
+          <Text style={styles.link}>{t('register.signIn')}</Text>
         </Pressable>
       </View>
     </AuthShell>
   );
+}
+
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    link: { color: colors.primaryText, fontSize: typography.small, fontWeight: '800' },
+    linkButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44 },
+    prompt: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },
+    promptText: { color: colors.textMuted, fontSize: typography.small },
+  });
 }
