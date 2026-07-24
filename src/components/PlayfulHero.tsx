@@ -15,11 +15,12 @@ type Props = {
   eyebrow?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   scene?: TravelSceneName;
+  visual?: ReactNode;
   badge?: ReactNode;
   children?: ReactNode;
 };
 
-export function PlayfulHero({ title, description, eyebrow, icon, scene, badge, children }: Props) {
+export function PlayfulHero({ title, description, eyebrow, icon, scene, visual, badge, children }: Props) {
   const { colors } = useAppTheme();
   const styles = useThemedStyles(createStyles);
   const reducedMotion = useReducedMotion();
@@ -75,7 +76,8 @@ export function PlayfulHero({ title, description, eyebrow, icon, scene, badge, c
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           {description ? <Text style={styles.description}>{description}</Text> : null}
         </View>
-        {scene ? <TravelScene animated scene={scene} size={148} style={styles.scene} /> : null}
+        {visual ? <View style={[styles.scene, styles.visual]}>{visual}</View> : null}
+        {!visual && scene ? <TravelScene animated scene={scene} size={148} style={styles.scene} /> : null}
       </View>
       {children ? <View style={styles.actions}>{children}</View> : null}
     </View>
@@ -116,5 +118,6 @@ function createStyles(colors: ThemeColors) {
   sparkles: { position: 'absolute', right: 88, top: 36 },
   title: { color: colors.heroText, fontSize: typography.title, fontWeight: '900', lineHeight: 33 },
   topRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  visual: { flexShrink: 0, height: 164, width: 164 },
   });
 }
