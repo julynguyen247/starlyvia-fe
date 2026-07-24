@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { Component, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
-import type { Group, MeshToonMaterial, TextureLoader } from 'three';
+import type { Group, MeshBasicMaterial, TextureLoader } from 'three';
 
 import { useAppTheme } from '../context/ThemeContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -48,7 +48,7 @@ class SceneBoundary extends Component<BoundaryProps, BoundaryState> {
 
 function TexturedEarth() {
   const loader = useRef<TextureLoader>(null);
-  const material = useRef<MeshToonMaterial>(null);
+  const material = useRef<MeshBasicMaterial>(null);
 
   useEffect(() => {
     const loadedTexture = loader.current?.load(
@@ -72,23 +72,7 @@ function TexturedEarth() {
       <textureLoader attach="userData-earthTextureLoader" ref={loader} />
       <mesh>
         <sphereGeometry args={[1, 64, 48]} />
-        <meshToonMaterial ref={material} color="#ffffff" />
-      </mesh>
-      <mesh scale={1.045}>
-        <sphereGeometry args={[1, 48, 36]} />
-        <meshBasicMaterial
-          color="#291a55"
-          side={1}
-        />
-      </mesh>
-      <mesh scale={1.075}>
-        <sphereGeometry args={[1, 48, 36]} />
-        <meshBasicMaterial
-          color="#8ed8ff"
-          opacity={0.2}
-          side={1}
-          transparent
-        />
+        <meshBasicMaterial ref={material} color="#ffffff" />
       </mesh>
     </group>
   );
@@ -125,7 +109,7 @@ function GlobeModel({
   return (
     <group
       ref={globe}
-      rotation={[0, 0.35, -0.14]}
+      rotation={[0, 0.35, 0]}
     >
       <TexturedEarth />
     </group>
@@ -192,8 +176,6 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
           pointerEvents="none"
           style={styles.canvas}
         >
-          <ambientLight intensity={1.25} />
-          <directionalLight intensity={1.8} position={[-3, 3, 5]} />
           <GlobeModel
             active={active}
             allowMotion={allowMotion}
