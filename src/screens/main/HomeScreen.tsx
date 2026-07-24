@@ -204,7 +204,6 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
 
       <PlayfulHero
         description="Gather your favorite people, then turn ideas into an itinerary."
-        eyebrow="YOUR TRAVEL UNIVERSE"
         title="Where will your crew go next?"
         visual={<TravelGlobe3D active={isFocused} />}
       >
