@@ -6,6 +6,7 @@ import { Animated, Keyboard, Platform, Pressable, StyleSheet, View } from 'react
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CreateGroupScreen } from '../screens/groups/CreateGroupScreen';
@@ -37,6 +38,7 @@ const tabIcons: Record<keyof MainTabParamList, { active: keyof typeof Ionicons.g
 
 function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -126,8 +128,8 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         {renderRoute(1)}
         <Animated.View style={[styles.qrLift, { transform: [{ translateY: -8 }, { scale: qrReveal }] }]}>
           <Pressable
-            accessibilityHint="QR scanning will be added in a future update"
-            accessibilityLabel="QR scanner, coming soon"
+            accessibilityHint={t('nav.qrHint')}
+            accessibilityLabel={t('nav.qrLabel')}
             accessibilityRole="button"
             accessibilityState={{ disabled: true }}
             disabled
@@ -144,6 +146,8 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 }
 
 function MainTabs() {
+  const { t } = useLanguage();
+
   return (
     <Tabs.Navigator
       backBehavior="history"
@@ -153,10 +157,10 @@ function MainTabs() {
         tabBarShowLabel: false,
       }}
     >
-      <Tabs.Screen component={HomeScreen} name="Home" />
-      <Tabs.Screen component={GroupsScreen} name="Groups" />
-      <Tabs.Screen component={NotificationsScreen} name="Notifications" />
-      <Tabs.Screen component={ProfileScreen} name="Profile" />
+      <Tabs.Screen component={HomeScreen} name="Home" options={{ tabBarAccessibilityLabel: t('nav.home') }} />
+      <Tabs.Screen component={GroupsScreen} name="Groups" options={{ tabBarAccessibilityLabel: t('nav.groups') }} />
+      <Tabs.Screen component={NotificationsScreen} name="Notifications" options={{ tabBarAccessibilityLabel: t('nav.notifications') }} />
+      <Tabs.Screen component={ProfileScreen} name="Profile" options={{ tabBarAccessibilityLabel: t('nav.profile') }} />
     </Tabs.Navigator>
   );
 }
@@ -173,6 +177,7 @@ function AuthNavigator() {
 export function RootNavigator() {
   const { token } = useAuth();
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
 
   if (!token) return <AuthNavigator />;
 
@@ -188,12 +193,12 @@ export function RootNavigator() {
       }}
     >
       <RootStack.Screen component={MainTabs} name="MainTabs" options={{ headerShown: false }} />
-      <RootStack.Screen component={CreateGroupScreen} name="CreateGroup" options={{ title: 'New travel circle' }} />
-      <RootStack.Screen component={InvitationsScreen} name="Invitations" options={{ title: 'Invitations' }} />
-      <RootStack.Screen component={GroupDetailScreen} name="GroupDetail" options={{ title: 'Travel circle' }} />
-      <RootStack.Screen component={CreatePlanScreen} name="CreatePlan" options={{ title: 'New itinerary' }} />
-      <RootStack.Screen component={PlanDetailScreen} name="PlanDetail" options={{ title: 'Itinerary' }} />
-      <RootStack.Screen component={AddStopScreen} name="AddStop" options={{ presentation: 'modal', title: 'Add a place' }} />
+      <RootStack.Screen component={CreateGroupScreen} name="CreateGroup" options={{ title: t('nav.newCircle') }} />
+      <RootStack.Screen component={InvitationsScreen} name="Invitations" options={{ title: t('nav.invitations') }} />
+      <RootStack.Screen component={GroupDetailScreen} name="GroupDetail" options={{ title: t('nav.circle') }} />
+      <RootStack.Screen component={CreatePlanScreen} name="CreatePlan" options={{ title: t('nav.newItinerary') }} />
+      <RootStack.Screen component={PlanDetailScreen} name="PlanDetail" options={{ title: t('nav.itinerary') }} />
+      <RootStack.Screen component={AddStopScreen} name="AddStop" options={{ presentation: 'modal', title: t('nav.addPlace') }} />
     </RootStack.Navigator>
   );
 }

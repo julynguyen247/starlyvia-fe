@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PlayfulHero } from '../../components/PlayfulHero';
 import { DreamyBackdrop } from '../../components/DreamyBackdrop';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { PlayfulHero } from '../../components/PlayfulHero';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
-import { radius, shadows, spacing, typography, type ThemeColors } from '../../theme/tokens';
-import { useThemedStyles } from '../../theme/useThemedStyles';
+import { shadows, spacing } from '../../theme/tokens';
 
 type Props = PropsWithChildren<{
   title: string;
@@ -17,42 +18,56 @@ type Props = PropsWithChildren<{
 
 export function AuthShell({ title, subtitle, requestError, children }: Props) {
   const { colors } = useAppTheme();
-  const styles = useThemedStyles(createStyles);
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.page}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+    >
       <DreamyBackdrop />
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          {
-            paddingBottom: Math.max(insets.bottom, spacing.xl),
-            paddingTop: Math.max(insets.top + spacing.xl, spacing.xxxl),
-          },
-        ]}
+        contentContainerClassName="flex-grow justify-center gap-8 px-6"
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, spacing.xl),
+          paddingTop: Math.max(insets.top + spacing.xl, spacing.xxxl),
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.brand}>
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.logo}>
-            <Ionicons color={colors.onPrimary} name="sparkles" size={23} />
+        <View className="flex-row flex-wrap items-center justify-between gap-3">
+          <View className="flex-row items-center gap-3">
+            <View
+              accessibilityElementsHidden
+              className="h-11 w-11 items-center justify-center rounded-xl"
+              importantForAccessibility="no-hide-descendants"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <Ionicons color={colors.onPrimary} name="sparkles" size={23} />
+            </View>
+            <Text className="text-2xl font-black tracking-tight" style={{ color: colors.text }}>starlyvia</Text>
           </View>
-          <Text style={styles.brandName}>starlyvia</Text>
+          <LanguageSwitcher compact />
         </View>
         <PlayfulHero
           description={subtitle}
-          eyebrow="YOUR NEXT ADVENTURE"
+          eyebrow={t('auth.eyebrow')}
           scene="welcome"
           title={title}
         />
-        <View style={styles.card}>
+        <View
+          className="gap-6 rounded-3xl border p-8"
+          style={[{ backgroundColor: colors.surface, borderColor: colors.border }, shadows]}
+        >
           {requestError ? (
             <View
-              accessibilityLabel={`Request failed. ${requestError}`}
+              accessibilityLabel={t('auth.requestFailed', { message: requestError })}
               accessibilityLiveRegion="assertive"
               accessibilityRole="alert"
-              style={styles.requestError}
+              className="flex-row items-start gap-2 rounded-2xl border p-4"
+              style={{ backgroundColor: colors.dangerSoft, borderColor: colors.danger }}
             >
               <Ionicons
                 accessibilityElementsHidden
@@ -61,7 +76,7 @@ export function AuthShell({ title, subtitle, requestError, children }: Props) {
                 name="alert-circle-outline"
                 size={20}
               />
-              <Text style={styles.requestErrorText}>{requestError}</Text>
+              <Text className="flex-1 text-sm leading-5" style={{ color: colors.dangerText }}>{requestError}</Text>
             </View>
           ) : null}
           {children}
@@ -69,34 +84,4 @@ export function AuthShell({ title, subtitle, requestError, children }: Props) {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-}
-
-function createStyles(colors: ThemeColors) {
-  return StyleSheet.create({
-  brand: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
-  brandName: { color: colors.text, fontSize: typography.heading, fontWeight: '900', letterSpacing: -0.4 },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.lg,
-    padding: spacing.xl,
-    ...shadows,
-  },
-  content: { flexGrow: 1, gap: spacing.xxl, justifyContent: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.xxxl },
-  logo: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.md, height: 44, justifyContent: 'center', width: 44 },
-  page: { backgroundColor: colors.background, flex: 1 },
-  requestError: {
-    alignItems: 'flex-start',
-    backgroundColor: colors.dangerSoft,
-    borderColor: colors.danger,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  requestErrorText: { color: colors.dangerText, flex: 1, fontSize: typography.small, lineHeight: 20 },
-  });
 }

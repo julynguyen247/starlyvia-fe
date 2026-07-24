@@ -4,6 +4,7 @@ import { Component, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 import type { Group, MeshBasicMaterial, TextureLoader } from 'three';
 
+import { useLanguage } from '../context/LanguageContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { TravelScene } from './TravelScene';
@@ -118,6 +119,7 @@ function GlobeModel({
 
 export function TravelGlobe3D({ active, size = 164 }: Props) {
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const reducedMotion = useReducedMotion();
   const allowMotion = reducedMotion === false;
   const rotationControl = useRef<RotationControl>({
@@ -155,8 +157,8 @@ export function TravelGlobe3D({ active, size = 164 }: Props) {
   return (
     <View
       accessibilityActions={[{ name: 'decrement' }, { name: 'increment' }]}
-      accessibilityHint="Swipe left or right to rotate the globe"
-      accessibilityLabel="Interactive 3D travel globe"
+      accessibilityHint={t('globe.hint')}
+      accessibilityLabel={t('globe.label')}
       accessibilityRole="adjustable"
       accessible
       onAccessibilityAction={({ nativeEvent }) => {

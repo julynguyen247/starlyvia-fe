@@ -4,26 +4,18 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { Avatar } from '../../components/Avatar';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { PlayfulHero } from '../../components/PlayfulHero';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { API_BASE_URL } from '../../services/apiClient';
 import { radius, spacing, typography, type ThemeColors, type ThemePreference } from '../../theme/tokens';
 
-const themeOptions: Array<{
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: ThemePreference;
-}> = [
-  { description: 'Match device', icon: 'phone-portrait-outline', label: 'System', value: 'system' },
-  { description: 'Bright & airy', icon: 'sunny-outline', label: 'Light', value: 'light' },
-  { description: 'Soft & focused', icon: 'moon-outline', label: 'Dark', value: 'dark' },
-];
-
 export function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const { colors, preference, resolvedScheme, setPreference } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [signingOut, setSigningOut] = useState(false);
@@ -36,32 +28,50 @@ export function ProfileScreen() {
     try {
       await signOut();
     } catch {
-      setSignOutError("We couldn't finish signing out. Please try again.");
+      setSignOutError(t('profile.signOutError'));
       setSigningOut(false);
     }
   }
 
   function confirmSignOut() {
     if (signingOut) return;
-    Alert.alert('Sign out?', 'You can sign back in on this device anytime.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void handleSignOut() },
+    Alert.alert(t('profile.signOutTitle'), t('profile.signOutMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('profile.signOut'), style: 'destructive', onPress: () => void handleSignOut() },
     ]);
   }
 
-  const travelerName = user?.username ?? 'Explorer';
+  const travelerName = user?.username ?? t('common.explorer');
+  const themeOptions: Array<{
+    description: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    value: ThemePreference;
+  }> = [
+    { description: t('profile.systemDescription'), icon: 'phone-portrait-outline', label: t('profile.system'), value: 'system' },
+    { description: t('profile.lightDescription'), icon: 'sunny-outline', label: t('profile.light'), value: 'light' },
+    { description: t('profile.darkDescription'), icon: 'moon-outline', label: t('profile.dark'), value: 'dark' },
+  ];
+  const resolvedMode = resolvedScheme === 'dark' ? t('profile.dark') : t('profile.light');
 
   return (
     <Screen>
       <PlayfulHero
         badge={<Avatar name={travelerName} size={74} uri={user?.avatarUrl} />}
-        description={user?.email ?? 'Your Starlyvia traveler profile'}
-        eyebrow="TRAVELER PROFILE"
+        description={user?.email ?? t('profile.defaultDescription')}
+        eyebrow={t('profile.eyebrow')}
         scene="welcome"
         title={travelerName}
       >
         {user?.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
       </PlayfulHero>
+
+      <View
+        className="gap-4 rounded-3xl border p-6"
+        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      >
+        <LanguageSwitcher />
+      </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeading}>
@@ -69,11 +79,11 @@ export function ProfileScreen() {
             <Ionicons color={colors.primary} name="color-palette-outline" size={23} />
           </View>
           <View style={styles.cardHeadingCopy}>
-            <Text accessibilityRole="header" style={styles.cardTitle}>Make it feel like yours</Text>
-            <Text style={styles.cardSubtitle}>Choose a look, or let Starlyvia follow your phone.</Text>
+            <Text accessibilityRole="header" style={styles.cardTitle}>{t('profile.appearanceTitle')}</Text>
+            <Text style={styles.cardSubtitle}>{t('profile.appearanceSubtitle')}</Text>
           </View>
         </View>
-        <View accessibilityLabel="Appearance" accessibilityRole="radiogroup" style={styles.themeOptions}>
+        <View accessibilityLabel={t('profile.appearance')} accessibilityRole="radiogroup" style={styles.themeOptions}>
           {themeOptions.map((option) => {
             const selected = preference === option.value;
             return (
@@ -99,7 +109,7 @@ export function ProfileScreen() {
           })}
         </View>
         <Text accessibilityLiveRegion="polite" style={styles.themeFootnote}>
-          Currently using {resolvedScheme} mode.
+          {t('profile.currentMode', { mode: resolvedMode.toLocaleLowerCase() })}
         </Text>
       </View>
 
@@ -109,20 +119,20 @@ export function ProfileScreen() {
             <Ionicons color={colors.primary} name="compass-outline" size={23} />
           </View>
           <View style={styles.cardHeadingCopy}>
-            <Text accessibilityRole="header" style={styles.cardTitle}>Trip-ready account</Text>
-            <Text style={styles.cardSubtitle}>The details that travel with your profile.</Text>
+            <Text accessibilityRole="header" style={styles.cardTitle}>{t('profile.accountTitle')}</Text>
+            <Text style={styles.cardSubtitle}>{t('profile.accountSubtitle')}</Text>
           </View>
         </View>
         <View style={styles.divider} />
         <View style={styles.row}>
-          <Text style={styles.label}>Account role</Text>
-          <Text style={styles.value}>{user?.role}</Text>
+          <Text style={styles.label}>{t('profile.accountRole')}</Text>
+          <Text style={styles.value}>{user?.role ? t(`role.${user.role}`) : undefined}</Text>
         </View>
         {__DEV__ ? (
           <>
             <View style={styles.divider} />
             <View style={styles.row}>
-              <Text style={styles.label}>Development API</Text>
+              <Text style={styles.label}>{t('profile.developmentApi')}</Text>
               <Text numberOfLines={2} style={styles.apiValue}>{API_BASE_URL}</Text>
             </View>
           </>
@@ -134,15 +144,15 @@ export function ProfileScreen() {
           <Ionicons color={colors.primary} name="shield-checkmark-outline" size={25} />
         </View>
         <View style={styles.noteCopy}>
-          <Text style={styles.noteTitle}>A small privacy promise</Text>
-          <Text style={styles.noteText}>Your sign-in token and appearance choice stay in the device's secure credential store.</Text>
+          <Text style={styles.noteTitle}>{t('profile.privacyTitle')}</Text>
+          <Text style={styles.noteText}>{t('profile.privacyText')}</Text>
         </View>
       </View>
 
       {signOutError ? (
         <Text accessibilityLiveRegion="assertive" accessibilityRole="alert" style={styles.signOutError}>{signOutError}</Text>
       ) : null}
-      <AppButton label="Sign out" loading={signingOut} onPress={confirmSignOut} variant="danger" />
+      <AppButton label={t('profile.signOut')} loading={signingOut} onPress={confirmSignOut} variant="danger" />
     </Screen>
   );
 }

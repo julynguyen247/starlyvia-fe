@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { fontFamilies, radius, spacing, stickerPalette, stickerShadows, typography, type ThemeColors } from '../theme/tokens';
 import { useThemedStyles } from '../theme/useThemedStyles';
 import type { Group } from '../types/api';
@@ -17,13 +18,14 @@ const groupIcons: Record<Group['type'], keyof typeof Ionicons.glyphMap> = {
 
 export function GroupCard({ group, onPress }: { group: Group; onPress: () => void }) {
   const { colors, resolvedScheme } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useThemedStyles(createStyles);
-  const groupTypeLabel = group.type.replace('_', ' ').toLowerCase();
+  const groupTypeLabel = t(`group.${group.type}`);
   const usesStickerSurface = resolvedScheme === 'dark';
 
   return (
     <Pressable
-      accessibilityLabel={`${group.name}. ${groupTypeLabel} travel circle.${group.description ? ` ${group.description}.` : ''} Open travel circle.`}
+      accessibilityLabel={`${group.name}. ${groupTypeLabel}. ${group.description ? `${group.description}. ` : ''}${t('card.openCircle')}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
@@ -45,10 +47,10 @@ export function GroupCard({ group, onPress }: { group: Group; onPress: () => voi
       </View>
       <View style={styles.body}>
         <View style={styles.copy}>
-          <Text style={[styles.eyebrow, usesStickerSurface && styles.copyMutedDark]}>TRAVEL CIRCLE</Text>
+          <Text style={[styles.eyebrow, usesStickerSurface && styles.copyMutedDark]}>{t('card.travelCircle')}</Text>
           <Text numberOfLines={2} style={[styles.name, usesStickerSurface && styles.copyDark]}>{group.name}</Text>
           <Text numberOfLines={2} style={[styles.description, usesStickerSurface && styles.copyMutedDark]}>
-            {group.description || `${groupTypeLabel} travel group`}
+            {group.description || t('card.defaultGroup', { type: groupTypeLabel })}
           </Text>
         </View>
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.iconStack}>

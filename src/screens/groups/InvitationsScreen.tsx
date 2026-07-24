@@ -8,6 +8,7 @@ import { Chip } from '../../components/Chip';
 import { DreamyBackdrop } from '../../components/DreamyBackdrop';
 import { ScreenIntro } from '../../components/ScreenIntro';
 import { StateView } from '../../components/StateView';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
@@ -18,6 +19,7 @@ import { relativeTime } from '../../utils/format';
 
 export function InvitationsScreen() {
   const { colors } = useAppTheme();
+  const { locale, t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
@@ -69,11 +71,11 @@ export function InvitationsScreen() {
       setInvitations((current) => current.filter((item) => item.id !== invitation.id));
       AccessibilityInfo.announceForAccessibility(
         accept
-          ? `Joined ${invitation.group.name}`
-          : `Invitation from ${invitation.group.name} declined`,
+          ? t('invites.joined', { name: invitation.group.name })
+          : t('invites.declined', { name: invitation.group.name }),
       );
     } catch (responseError) {
-      Alert.alert('Could not update invitation', getErrorMessage(responseError));
+      Alert.alert(t('invites.updateError'), getErrorMessage(responseError));
     } finally {
       busyRef.current = false;
       setBusyId(null);
@@ -87,19 +89,19 @@ export function InvitationsScreen() {
         kind="loading"
         loading
         presentation="screen"
-        title="Opening invitations…"
+        title={t('invites.opening')}
       />
     );
   }
   if (error && !invitations.length) {
     return (
       <StateView
-        actionLabel="Try again"
+        actionLabel={t('common.tryAgain')}
         kind="error"
         message={error}
         onAction={() => void load()}
         presentation="screen"
-        title="Could not load invitations"
+        title={t('invites.loadError')}
       />
     );
   }
@@ -117,23 +119,23 @@ export function InvitationsScreen() {
         ListEmptyComponent={(
           <StateView
             kind="empty"
-            message="When someone invites you to a travel circle, it will show up here."
+            message={t('invites.emptyMessage')}
             scene="invitation"
-            title="No invitations waiting"
+            title={t('invites.emptyTitle')}
           />
         )}
         ListHeaderComponent={(
           <View style={styles.header}>
             <ScreenIntro
               scene="invitation"
-              subtitle="Open a ticket to join a new crew, or politely pass for now."
-              title="Trip invitations"
+              subtitle={t('invites.subtitle')}
+              title={t('invites.title')}
             />
             {error ? (
               <View accessibilityLiveRegion="polite" style={styles.errorNotice}>
                 <Ionicons color={colors.warningText} name="cloud-offline-outline" size={21} />
                 <View style={styles.errorCopy}>
-                  <Text style={styles.errorTitle}>Invitations could not be refreshed</Text>
+                  <Text style={styles.errorTitle}>{t('invites.refreshError')}</Text>
                   <Text style={styles.errorMessage}>{error}</Text>
                 </View>
               </View>
@@ -154,11 +156,11 @@ export function InvitationsScreen() {
                   <Ionicons color={colors.primary} name="ticket-outline" size={22} />
                 </View>
                 <Chip
-                  label={invitation.status}
+                  label={t(`status.${invitation.status}`)}
                   tone={invitation.status === 'PENDING' ? 'warning' : 'neutral'}
                 />
               </View>
-              <Text style={styles.time}>{relativeTime(invitation.createdAt)}</Text>
+              <Text style={styles.time}>{relativeTime(invitation.createdAt, locale)}</Text>
             </View>
             <View
               accessibilityElementsHidden
@@ -166,13 +168,13 @@ export function InvitationsScreen() {
               style={styles.ticketDivider}
             />
             <Text style={styles.title}>{invitation.group.name}</Text>
-            <Text style={styles.description}>{invitation.group.description || 'You have been invited to plan a trip with this circle.'}</Text>
+            <Text style={styles.description}>{invitation.group.description || t('invites.defaultMessage')}</Text>
             {invitation.status === 'PENDING' ? (
               <View style={styles.actions}>
                 <AppButton
                   compact
                   disabled={busyId !== null || refreshing}
-                  label="Decline"
+                  label={t('invites.decline')}
                   loading={busyId === invitation.id && busyDecision === 'decline'}
                   onPress={() => void respond(invitation, false)}
                   style={styles.action}
@@ -182,7 +184,7 @@ export function InvitationsScreen() {
                   compact
                   disabled={busyId !== null || refreshing}
                   icon="checkmark"
-                  label="Join group"
+                  label={t('invites.join')}
                   loading={busyId === invitation.id && busyDecision === 'accept'}
                   onPress={() => void respond(invitation, true)}
                   style={styles.action}

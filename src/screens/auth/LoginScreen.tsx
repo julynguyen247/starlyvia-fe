@@ -1,18 +1,19 @@
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
-import { spacing, typography, type ThemeColors } from '../../theme/tokens';
-import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { AuthScreenProps } from '../../types/navigation';
 import { isEmail } from '../../utils/validation';
 import { AuthShell } from './AuthShell';
 
 export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
-  const styles = useThemedStyles(createStyles);
+  const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const { signIn, isSubmitting } = useAuth();
   const passwordRef = useRef<TextInput>(null);
   const [email, setEmail] = useState('');
@@ -25,8 +26,8 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
 
     setRequestError(null);
     const nextErrors = {
-      email: !isEmail(email) ? 'Enter a valid email address.' : undefined,
-      password: !password ? 'Enter your password.' : undefined,
+      email: !isEmail(email) ? t('auth.invalidEmail') : undefined,
+      password: !password ? t('auth.passwordRequired') : undefined,
     };
     setErrors(nextErrors);
     if (nextErrors.email || nextErrors.password) return;
@@ -36,7 +37,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     } catch (error) {
       setRequestError(
         error instanceof TypeError
-          ? "We couldn't reach Starlyvia. Check your connection and try again."
+          ? t('auth.connectionError')
           : getErrorMessage(error),
       );
     }
@@ -45,8 +46,8 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
   return (
     <AuthShell
       requestError={requestError}
-      title="Plan farther. Together."
-      subtitle="Sign in to pick up your next adventure."
+      title={t('login.title')}
+      subtitle={t('login.subtitle')}
     >
       <AppInput
         autoCapitalize="none"
@@ -54,13 +55,13 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
         error={errors.email}
         icon="mail-outline"
         keyboardType="email-address"
-        label="Email"
+        label={t('auth.email')}
         onChangeText={(value) => {
           setEmail(value);
           setRequestError(null);
         }}
         onSubmitEditing={() => passwordRef.current?.focus()}
-        placeholder="you@example.com"
+        placeholder={t('auth.emailPlaceholder')}
         returnKeyType="next"
         value={email}
       />
@@ -69,33 +70,24 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
         autoComplete="current-password"
         error={errors.password}
         icon="lock-closed-outline"
-        label="Password"
+        label={t('auth.password')}
         onChangeText={(value) => {
           setPassword(value);
           setRequestError(null);
         }}
         onSubmitEditing={() => void submit()}
-        placeholder="Your password"
+        placeholder={t('auth.passwordPlaceholder')}
         returnKeyType="done"
         secureTextEntry
         value={password}
       />
-      <AppButton label="Sign in" loading={isSubmitting} onPress={() => void submit()} />
-      <View style={styles.prompt}>
-        <Text style={styles.promptText}>New to Starlyvia?</Text>
-        <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Register')} style={styles.linkButton}>
-          <Text style={styles.link}>Create account</Text>
+      <AppButton label={t('login.action')} loading={isSubmitting} onPress={() => void submit()} />
+      <View className="flex-row flex-wrap items-center justify-center gap-1">
+        <Text className="text-sm" style={{ color: colors.textMuted }}>{t('login.new')}</Text>
+        <Pressable accessibilityRole="button" className="min-h-11 items-center justify-center" onPress={() => navigation.navigate('Register')}>
+          <Text className="text-sm font-extrabold" style={{ color: colors.primaryText }}>{t('login.createAccount')}</Text>
         </Pressable>
       </View>
     </AuthShell>
   );
-}
-
-function createStyles(colors: ThemeColors) {
-  return StyleSheet.create({
-  link: { color: colors.primaryText, fontSize: typography.small, fontWeight: '800' },
-  linkButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44 },
-  prompt: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },
-  promptText: { color: colors.textMuted, fontSize: typography.small },
-  });
 }
