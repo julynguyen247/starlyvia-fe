@@ -59,7 +59,6 @@ export function ProfileScreen() {
       <PlayfulHero
         badge={<Avatar name={travelerName} size={74} uri={user?.avatarUrl} />}
         description={user?.email ?? t('profile.defaultDescription')}
-        eyebrow={t('profile.eyebrow')}
         scene="welcome"
         title={travelerName}
       >
