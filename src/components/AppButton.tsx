@@ -77,23 +77,23 @@ export function AppButton({
 
 function createStyles(_colors: ThemeColors) {
   return StyleSheet.create({
-  base: {
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'center',
-    minHeight: 52,
-    paddingHorizontal: spacing.lg,
-  },
-  compact: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-  },
-  disabled: { elevation: 0, opacity: 0.52, shadowOpacity: 0 },
-  label: { fontSize: typography.body, fontWeight: '700' },
-  pressed: { opacity: 0.92, transform: [{ translateY: 1 }, { scale: 0.975 }] },
-  raised: { ...shadows },
+    base: {
+      alignItems: 'center',
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      justifyContent: 'center',
+      minHeight: 52,
+      paddingHorizontal: spacing.lg,
+    },
+    compact: {
+      minHeight: 44,
+      paddingHorizontal: spacing.md,
+    },
+    disabled: { elevation: 0, opacity: 0.52, shadowOpacity: 0 },
+    label: { fontSize: typography.body, fontWeight: '700' },
+    pressed: { opacity: 0.92, transform: [{ translateY: 1 }, { scale: 0.975 }] },
+    raised: { ...shadows },
   });
 }

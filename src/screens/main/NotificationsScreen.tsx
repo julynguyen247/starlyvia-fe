@@ -8,6 +8,7 @@ import { AppButton } from '../../components/AppButton';
 import { DreamyBackdrop } from '../../components/DreamyBackdrop';
 import { ScreenIntro } from '../../components/ScreenIntro';
 import { StateView } from '../../components/StateView';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { notificationService } from '../../services/notificationService';
@@ -38,6 +39,7 @@ const typeColors: Record<string, string> = {
 
 export function NotificationsScreen() {
   const { colors } = useAppTheme();
+  const { locale, t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<Notification[]>([]);
@@ -125,7 +127,7 @@ export function NotificationsScreen() {
     try {
       const updated = await notificationService.markRead(notification.id);
       setItems((current) => current.map((item) => item.id === updated.id ? updated : item));
-      setAnnouncement(`${notification.title} marked as read.`);
+      setAnnouncement(t('notifications.markedRead', { title: notification.title }));
     } catch (markError) {
       setItems((current) => current.map((item) => item.id === notification.id ? notification : item));
       setError(getErrorMessage(markError));
@@ -142,7 +144,7 @@ export function NotificationsScreen() {
     setItems((current) => current.map((item) => ({ ...item, status: 'READ' })));
     try {
       await notificationService.markAllRead();
-      setAnnouncement('All updates marked as read.');
+      setAnnouncement(t('notifications.allMarkedRead'));
     } catch (markError) {
       setItems(previous);
       setError(getErrorMessage(markError));
@@ -151,18 +153,18 @@ export function NotificationsScreen() {
     }
   }
 
-  if (loading) return <StateView loading presentation="screen" scene="invitation" title="Checking for updates…" />;
+  if (loading) return <StateView loading presentation="screen" scene="invitation" title={t('notifications.loading')} />;
   if (error && !items.length) {
     return (
       <StateView
-        actionLabel="Try again"
+        actionLabel={t('common.tryAgain')}
         icon="cloud-offline-outline"
         kind="offline"
         message={error}
         onAction={() => void load()}
         presentation="screen"
         scene="invitation"
-        title="Could not load updates"
+        title={t('notifications.loadError')}
       />
     );
   }
@@ -175,20 +177,20 @@ export function NotificationsScreen() {
       <View style={styles.header}>
         <ScreenIntro
           scene="invitation"
-          subtitle="Fresh notes from your travel circles, all in one friendly stack."
-          title="Travel updates"
+          subtitle={t('notifications.subtitle')}
+          title={t('notifications.title')}
         />
         <View style={styles.unreadSummary}>
           <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.unreadSignal} />
           <View style={styles.unreadCopy}>
             <Text style={styles.unreadCount}>{unreadCount}</Text>
-            <Text style={styles.unreadLabel}>{unreadCount === 1 ? 'unread update' : 'unread updates'}</Text>
+            <Text style={styles.unreadLabel}>{t(unreadCount === 1 ? 'notifications.unread' : 'notifications.unreads')}</Text>
           </View>
           {unreadCount ? (
             <AppButton
               compact
               disabled={markingId !== null || refreshing || loadingMore}
-              label="Read all"
+              label={t('notifications.readAll')}
               loading={markingAllRead}
               onPress={() => void markAllRead()}
               variant="secondary"
@@ -196,7 +198,7 @@ export function NotificationsScreen() {
           ) : (
             <View style={styles.caughtUp}>
               <Ionicons color={colors.success} name="checkmark-circle" size={18} />
-              <Text style={styles.caughtUpText}>Caught up</Text>
+              <Text style={styles.caughtUpText}>{t('notifications.caughtUp')}</Text>
             </View>
           )}
         </View>
@@ -213,14 +215,14 @@ export function NotificationsScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <StateView icon="notifications-outline" message="New group and itinerary activity will appear here." title="Your postcard tray is clear" />
+          <StateView icon="notifications-outline" message={t('notifications.emptyMessage')} title={t('notifications.emptyTitle')} />
         }
         ListFooterComponent={loadingMore ? (
-          <ActivityIndicator accessibilityLabel="Loading more updates" color={colors.primary} style={styles.footerLoader} />
+          <ActivityIndicator accessibilityLabel={t('notifications.loadingMore')} color={colors.primary} style={styles.footerLoader} />
         ) : paginationError ? (
           <View accessibilityLiveRegion="polite" style={styles.paginationError}>
-            <Text style={styles.paginationErrorText}>More updates could not be loaded. {paginationError}</Text>
-            <AppButton compact label="Try again" onPress={() => void loadMore(true)} variant="ghost" />
+            <Text style={styles.paginationErrorText}>{t('notifications.moreError', { message: paginationError })}</Text>
+            <AppButton compact label={t('common.tryAgain')} onPress={() => void loadMore(true)} variant="ghost" />
           </View>
         ) : null}
         onEndReached={() => void loadMore()}
@@ -229,7 +231,7 @@ export function NotificationsScreen() {
         refreshing={refreshing}
         renderItem={({ item }) => (
           <Pressable
-            accessibilityLabel={`${item.title}. ${item.status === 'UNREAD' ? 'Unread' : 'Read'}. ${item.message}`}
+            accessibilityLabel={`${item.title}. ${t(item.status === 'UNREAD' ? 'notifications.unreadStatus' : 'notifications.read')}. ${item.message}`}
             accessibilityRole="button"
             accessibilityState={{ busy: markingId === item.id, disabled: item.status === 'READ' || markingAllRead || markingId !== null }}
             disabled={item.status === 'READ' || markingAllRead || markingId !== null}
@@ -250,12 +252,12 @@ export function NotificationsScreen() {
                 {item.status === 'UNREAD' ? (
                   <View style={styles.newBadge}>
                     <View style={styles.unreadDot} />
-                    <Text style={styles.newBadgeText}>NEW</Text>
+                    <Text style={styles.newBadgeText}>{t('notifications.new')}</Text>
                   </View>
                 ) : null}
               </View>
               <Text numberOfLines={3} style={styles.message}>{item.message}</Text>
-              <Text style={styles.time}>{relativeTime(item.createdAt)}</Text>
+              <Text style={styles.time}>{relativeTime(item.createdAt, locale)}</Text>
             </View>
           </Pressable>
         )}

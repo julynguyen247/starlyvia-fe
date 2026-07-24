@@ -7,6 +7,7 @@ import { AppInput } from '../../components/AppInput';
 import { ResponsiveFieldRow } from '../../components/ResponsiveFieldRow';
 import { Screen } from '../../components/Screen';
 import { TravelScene } from '../../components/TravelScene';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { placeService } from '../../services/placeService';
@@ -45,15 +46,16 @@ function normalizePlace(place: PlaceDetails): SelectedPlace | null {
   } : null;
 }
 
-function openProviderUrl(url: string) {
+function openProviderUrl(url: string, errorTitle: string, errorMessage: string) {
   void Linking.openURL(url).catch(() => {
-    Alert.alert('Could not open link', 'Please try again in a moment.');
+    Alert.alert(errorTitle, errorMessage);
   });
 }
 
 export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>) {
   const { planId, nextOrderIndex } = route.params;
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const sessionToken = useMemo(createSessionId, []);
   const [pickerMode, setPickerMode] = useState<PickerMode>('map');
@@ -128,7 +130,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
   function applyCatalogPlace(place: PlaceDetails, errorTarget: PickerMode = 'map') {
     const normalizedPlace = normalizePlace(place);
     if (!normalizedPlace) {
-      const message = 'This place is missing a name. Choose another result or drop your own pin.';
+      const message = t('addStop.missingName');
       if (errorTarget === 'search') setSearchError(message);
       else setNearbyError(message);
       return;
@@ -178,7 +180,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
     setCompletedQuery(null);
     setSearchError(null);
     setErrors((current) => ({ ...current, query: undefined }));
-    if (!query.trim()) setQuery('Pinned stop');
+    if (!query.trim()) setQuery(t('addStop.pinnedStop'));
   }
 
   async function exploreArea() {
@@ -196,10 +198,10 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
           : [];
       });
       setNearbyPlaces(mappablePlaces);
-      if (mappablePlaces.length === 0) setNearbyError('No catalog places were found in this area. You can still drop your own pin.');
+      if (mappablePlaces.length === 0) setNearbyError(t('addStop.noNearby'));
     } catch (error) {
       if (!mountedRef.current || generation !== nearbyRequestGeneration.current) return;
-      setNearbyError(`${getErrorMessage(error)} You can still drop your own pin.`);
+      setNearbyError(`${getErrorMessage(error)} ${t('addStop.pinFallback')}`);
     } finally {
       if (mountedRef.current && generation === nearbyRequestGeneration.current) setExploring(false);
     }
@@ -207,12 +209,12 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
 
   async function submit() {
     const nextErrors: Errors = {
-      query: !query.trim() ? 'Give this stop a name.' : undefined,
-      arrivalTime: !isTime(arrivalTime) ? 'Use 24-hour HH:mm.' : undefined,
+      query: !query.trim() ? t('addStop.nameError') : undefined,
+      arrivalTime: !isTime(arrivalTime) ? t('addStop.timeError') : undefined,
       departureTime: !isTime(departureTime)
-        ? 'Use 24-hour HH:mm.'
+        ? t('addStop.timeError')
         : isTime(arrivalTime) && departureTime <= arrivalTime
-          ? 'Leave after you arrive.'
+          ? t('addStop.departureError')
           : undefined,
     };
     setErrors(nextErrors);
@@ -239,7 +241,7 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
       });
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Could not add stop', getErrorMessage(error));
+      Alert.alert(t('addStop.submitError'), getErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -291,18 +293,18 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
         <View style={styles.heroCopy}>
           <View style={styles.heroEyebrow}>
             <Ionicons color={colors.onSticker} name="navigate" size={14} />
-            <Text style={styles.heroEyebrowText}>NEXT ADVENTURE</Text>
+            <Text style={styles.heroEyebrowText}>{t('addStop.eyebrow')}</Text>
           </View>
-          <Text accessibilityRole="header" style={styles.heroTitle}>Pin the perfect place.</Text>
-          <Text style={styles.heroSubtitle}>Roam the map, discover nearby gems, or search for a favorite.</Text>
+          <Text accessibilityRole="header" style={styles.heroTitle}>{t('addStop.title')}</Text>
+          <Text style={styles.heroSubtitle}>{t('addStop.subtitle')}</Text>
         </View>
         <TravelScene scene="place" size={118} style={styles.heroScene} />
       </View>
 
-      <View accessibilityLabel="Place selection method" accessibilityRole="tablist" style={styles.modeSwitch}>
+      <View accessibilityLabel={t('addStop.selectionMethod')} accessibilityRole="tablist" style={styles.modeSwitch}>
         {([
-          { icon: 'map-outline' as const, label: 'Map', value: 'map' as const },
-          { icon: 'search-outline' as const, label: 'Search', value: 'search' as const },
+          { icon: 'map-outline' as const, value: 'map' as const },
+          { icon: 'search-outline' as const, value: 'search' as const },
         ]).map((item) => {
           const active = pickerMode === item.value;
           return (
@@ -314,27 +316,27 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
               style={({ pressed }) => [styles.mode, active && styles.modeActive, pressed && styles.pressed]}
             >
               <Ionicons color={active ? colors.onSticker : colors.heroTextMuted} name={item.icon} size={19} />
-              <Text style={[styles.modeText, active && styles.modeTextActive]}>{item.label}</Text>
+              <Text style={[styles.modeText, active && styles.modeTextActive]}>{t(item.value === 'map' ? 'addStop.map' : 'addStop.search')}</Text>
             </Pressable>
           );
         })}
       </View>
-      <View accessibilityLabel="Map and search providers" style={styles.attribution}>
-        <Text style={styles.attributionText}>Maps </Text>
+      <View accessibilityLabel={t('addStop.providers')} style={styles.attribution}>
+        <Text style={styles.attributionText}>{t('addStop.maps')} </Text>
         <Pressable
-          accessibilityLabel="Open OpenStreetMap copyright information"
+          accessibilityLabel={t('addStop.openOsm')}
           accessibilityRole="link"
-          onPress={() => openProviderUrl('https://www.openstreetmap.org/copyright')}
+          onPress={() => openProviderUrl('https://www.openstreetmap.org/copyright', t('addStop.linkErrorTitle'), t('addStop.linkErrorMessage'))}
         >
           <Text style={styles.attributionLink}>© OpenStreetMap contributors</Text>
         </Pressable>
         <Text style={styles.attributionText}> · </Text>
         <Pressable
-          accessibilityLabel="Open Geoapify website"
+          accessibilityLabel={t('addStop.openGeoapify')}
           accessibilityRole="link"
-          onPress={() => openProviderUrl('https://www.geoapify.com/')}
+          onPress={() => openProviderUrl('https://www.geoapify.com/', t('addStop.linkErrorTitle'), t('addStop.linkErrorMessage'))}
         >
-          <Text style={styles.attributionLink}>Powered by Geoapify</Text>
+          <Text style={styles.attributionLink}>{t('addStop.poweredBy')}</Text>
         </Pressable>
       </View>
 
@@ -350,23 +352,23 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
           {selectedPlace ? <SelectedPlaceCard colors={colors} place={selectedPlace} styles={styles} /> : null}
           <View style={styles.mapActions}>
             <View style={styles.mapCopy}>
-              <Text style={styles.mapEyebrow}>{selectedCoordinate ? 'PIN READY' : 'EXPLORE MODE'}</Text>
-              <Text style={styles.mapTitle}>{selectedCoordinate ? 'This spot looks good' : 'Find your neighborhood'}</Text>
+              <Text style={styles.mapEyebrow}>{selectedCoordinate ? t('addStop.pinReady') : t('addStop.exploreMode')}</Text>
+              <Text style={styles.mapTitle}>{selectedCoordinate ? t('addStop.spotGood') : t('addStop.findNeighborhood')}</Text>
               <Text style={styles.mapSubtitle}>
                 {selectedCoordinate
                   ? `${selectedCoordinate.latitude.toFixed(5)}, ${selectedCoordinate.longitude.toFixed(5)}`
-                  : 'Move the map, then tap a spot or explore nearby places.'}
+                  : t('addStop.mapHint')}
               </Text>
             </View>
-            <AppButton compact icon="sparkles-outline" label="Explore here" loading={exploring} onPress={() => void exploreArea()} variant="secondary" />
+            <AppButton compact icon="sparkles-outline" label={t('addStop.exploreHere')} loading={exploring} onPress={() => void exploreArea()} variant="secondary" />
           </View>
           {nearbyError ? <Text accessibilityLiveRegion="polite" style={styles.nearbyError}>{nearbyError}</Text> : null}
           {nearbyPlaces.length ? (
-            <View accessibilityLabel="Nearby places" style={styles.nearbyList}>
-              <Text style={styles.nearbyTitle}>Nearby picks</Text>
+            <View accessibilityLabel={t('addStop.nearbyPlaces')} style={styles.nearbyList}>
+              <Text style={styles.nearbyTitle}>{t('addStop.nearbyPicks')}</Text>
               {nearbyPlaces.slice(0, 5).map((place) => (
                 <PlaceResult
-                  address={place.address ?? 'Address unavailable'}
+                  address={place.address ?? t('addStop.addressUnavailable')}
                   colors={colors}
                   key={place.providerPlaceId ?? `${place.latitude},${place.longitude}`}
                   name={place.name}
@@ -377,18 +379,18 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
               ))}
             </View>
           ) : null}
-          <AppInput editable={!submitting} autoCapitalize="words" error={errors.query} icon="flag-outline" label="Stop name" onChangeText={updateQuery} placeholder="Name your pinned stop" value={query} />
+          <AppInput editable={!submitting} autoCapitalize="words" error={errors.query} icon="flag-outline" label={t('addStop.stopName')} onChangeText={updateQuery} placeholder={t('addStop.stopNamePlaceholder')} value={query} />
         </View>
       ) : (
         <>
-          <AppInput editable={!submitting} autoCapitalize="words" error={errors.query} icon="search-outline" label="Place" onChangeText={updateQuery} placeholder="Search cafes, landmarks, hotels…" value={query} />
+          <AppInput editable={!submitting} autoCapitalize="words" error={errors.query} icon="search-outline" label={t('addStop.place')} onChangeText={updateQuery} placeholder={t('addStop.placePlaceholder')} value={query} />
           {selectedPlace && !selectedCoordinate ? (
             <SelectedPlaceCard colors={colors} place={selectedPlace} styles={styles} />
           ) : null}
           {searching || selecting ? (
-            <View accessibilityLabel={selecting ? 'Opening place' : 'Searching places'} accessibilityLiveRegion="polite" accessibilityState={{ busy: true }} style={styles.searching}>
+            <View accessibilityLabel={selecting ? t('addStop.openingPlace') : t('addStop.searchingPlaces')} accessibilityLiveRegion="polite" accessibilityState={{ busy: true }} style={styles.searching}>
               <ActivityIndicator color={colors.primary} />
-              <Text style={styles.searchingText}>{selecting ? 'Opening that place…' : 'Looking around the map…'}</Text>
+              <Text style={styles.searchingText}>{selecting ? t('addStop.openingPlaceMessage') : t('addStop.searchingMessage')}</Text>
             </View>
           ) : null}
           {searchError ? (
@@ -396,15 +398,15 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
               <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.searchErrorIcon}>
                 <Ionicons color={colors.warningText} name="cloud-offline-outline" size={21} />
               </View>
-              <Text style={styles.searchError}>{searchError} You can still switch to the map or add this stop manually.</Text>
+              <Text style={styles.searchError}>{searchError} {t('addStop.manualFallback')}</Text>
             </View>
           ) : null}
           {suggestions.length ? (
-            <View accessibilityLabel="Place suggestions" style={styles.results}>
-              <Text style={styles.resultsTitle}>Best matches</Text>
+            <View accessibilityLabel={t('addStop.suggestions')} style={styles.results}>
+              <Text style={styles.resultsTitle}>{t('addStop.bestMatches')}</Text>
               {suggestions.map((suggestion) => (
                 <PlaceResult
-                  address={suggestion.address || suggestion.fullText || 'Address unavailable'}
+                  address={suggestion.address || suggestion.fullText || t('addStop.addressUnavailable')}
                   colors={colors}
                   disabled={selecting}
                   key={suggestion.providerPlaceId}
@@ -419,8 +421,8 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
             <View accessibilityLiveRegion="polite" style={styles.noResults}>
               <Ionicons color={colors.primary} name="trail-sign-outline" size={24} />
               <View style={styles.noResultsCopy}>
-                <Text style={styles.noResultsTitle}>No exact match nearby</Text>
-                <Text style={styles.noResultsText}>Keep your name and fill in the details, or switch to the map.</Text>
+                <Text style={styles.noResultsTitle}>{t('addStop.noMatchTitle')}</Text>
+                <Text style={styles.noResultsText}>{t('addStop.noMatchMessage')}</Text>
               </View>
             </View>
           ) : null}
@@ -431,18 +433,18 @@ export function AddStopScreen({ navigation, route }: RootScreenProps<'AddStop'>)
         <View style={styles.detailsHeading}>
           <View style={styles.detailsIcon}><Ionicons color={colors.primary} name="create-outline" size={20} /></View>
           <View style={styles.detailsHeadingCopy}>
-            <Text accessibilityRole="header" style={styles.detailsTitle}>Make it yours</Text>
-            <Text style={styles.detailsSubtitle}>Add the practical bits for everyone on the trip.</Text>
+            <Text accessibilityRole="header" style={styles.detailsTitle}>{t('addStop.detailsTitle')}</Text>
+            <Text style={styles.detailsSubtitle}>{t('addStop.detailsSubtitle')}</Text>
           </View>
         </View>
-        <AppInput editable={!submitting} label="Address" onChangeText={setAddress} placeholder="Optional for a custom pin" value={address} />
+        <AppInput editable={!submitting} label={t('addStop.address')} onChangeText={setAddress} placeholder={t('addStop.addressPlaceholder')} value={address} />
         <ResponsiveFieldRow>
-          <AppInput editable={!submitting} error={errors.arrivalTime} keyboardType="numbers-and-punctuation" label="Arrive" onChangeText={(value) => { setArrivalTime(value); setErrors((current) => ({ ...current, arrivalTime: undefined })); }} placeholder="10:00" value={arrivalTime} />
-          <AppInput editable={!submitting} error={errors.departureTime} keyboardType="numbers-and-punctuation" label="Leave" onChangeText={(value) => { setDepartureTime(value); setErrors((current) => ({ ...current, departureTime: undefined })); }} placeholder="11:00" value={departureTime} />
+          <AppInput editable={!submitting} error={errors.arrivalTime} keyboardType="numbers-and-punctuation" label={t('addStop.arrive')} onChangeText={(value) => { setArrivalTime(value); setErrors((current) => ({ ...current, arrivalTime: undefined })); }} placeholder="10:00" value={arrivalTime} />
+          <AppInput editable={!submitting} error={errors.departureTime} keyboardType="numbers-and-punctuation" label={t('addStop.leave')} onChangeText={(value) => { setDepartureTime(value); setErrors((current) => ({ ...current, departureTime: undefined })); }} placeholder="11:00" value={departureTime} />
         </ResponsiveFieldRow>
-        <AppInput editable={!submitting} label="Note" maxLength={500} multiline onChangeText={setNote} placeholder="Tickets, reservation, what to order…" value={note} />
+        <AppInput editable={!submitting} label={t('addStop.note')} maxLength={500} multiline onChangeText={setNote} placeholder={t('addStop.notePlaceholder')} value={note} />
       </View>
-      <AppButton icon="add-circle-outline" label="Add to itinerary" loading={submitting} onPress={() => void submit()} />
+      <AppButton icon="add-circle-outline" label={t('addStop.action')} loading={submitting} onPress={() => void submit()} />
     </Screen>
   );
 }
@@ -484,13 +486,14 @@ type SelectedPlaceCardProps = {
 };
 
 function SelectedPlaceCard({ colors, place, styles }: SelectedPlaceCardProps) {
+  const { t } = useLanguage();
   return (
-    <View accessibilityLabel={`${place.name} matched from the place catalog`} accessibilityLiveRegion="polite" style={styles.selected}>
+    <View accessibilityLabel={t('addStop.catalogMatch', { name: place.name })} accessibilityLiveRegion="polite" style={styles.selected}>
       <View style={styles.selectedStamp}><Ionicons color={colors.onSticker} name="checkmark" size={20} /></View>
       <View style={styles.selectedCopy}>
-        <Text style={styles.selectedEyebrow}>PLACE LOCKED IN</Text>
+        <Text style={styles.selectedEyebrow}>{t('addStop.locked')}</Text>
         <Text numberOfLines={1} style={styles.selectedTitle}>{place.name}</Text>
-        <Text numberOfLines={2} style={styles.selectedMeta}>{place.address || 'Address unavailable'}</Text>
+        <Text numberOfLines={2} style={styles.selectedMeta}>{place.address || t('addStop.addressUnavailable')}</Text>
       </View>
       {place.rating ? <Text style={styles.rating}>★ {place.rating}</Text> : null}
     </View>

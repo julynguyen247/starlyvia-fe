@@ -9,6 +9,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import {
   radius,
@@ -57,6 +58,7 @@ export function PlaceMapPicker({
 }: Props) {
   const cameraRef = useRef<CameraRef>(null);
   const { colors, resolvedScheme } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [mapFailed, setMapFailed] = useState(false);
   const placesWithCoordinates = nearbyPlaces.filter(isCoordinate);
@@ -91,7 +93,7 @@ export function PlaceMapPicker({
   return (
     <View style={styles.shell}>
       <Map
-        accessibilityLabel="Interactive place map. Drag to explore, or tap once to drop a stop pin."
+        accessibilityLabel={t('map.label')}
         attribution
         attributionPosition={{ bottom: 8, left: 8 }}
         compass
@@ -119,7 +121,7 @@ export function PlaceMapPicker({
 
         {placesWithCoordinates.map((place) => (
           <Marker
-            accessibilityLabel={`${place.name ?? 'Nearby place'}. ${place.address ?? 'Open place'}`}
+            accessibilityLabel={`${place.name ?? t('map.nearbyPlace')}. ${place.address ?? t('map.openPlace')}`}
             accessibilityRole="button"
             anchor="bottom"
             id={place.providerPlaceId ?? `${place.latitude},${place.longitude}`}
@@ -138,14 +140,14 @@ export function PlaceMapPicker({
 
         {selectedCoordinate ? (
           <Marker
-            accessibilityLabel="Selected stop pin"
+            accessibilityLabel={t('map.selectedPin')}
             anchor="bottom"
             id="selected-stop"
             lngLat={[selectedCoordinate.longitude, selectedCoordinate.latitude]}
           >
             <View style={styles.selectedMarkerWrap}>
               <View style={styles.selectedMarkerLabel}>
-                <Text numberOfLines={1} style={styles.selectedMarkerText}>YOUR STOP</Text>
+                <Text numberOfLines={1} style={styles.selectedMarkerText}>{t('map.yourStop')}</Text>
               </View>
               <View style={styles.selectedMarker}>
                 <Ionicons color={colors.onSticker} name="location" size={24} />
@@ -160,8 +162,8 @@ export function PlaceMapPicker({
           <Ionicons color={colors.onSticker} name="finger-print-outline" size={16} />
         </View>
         <View>
-          <Text style={styles.mapBadgeTitle}>TAP TO PIN</Text>
-          <Text style={styles.mapBadgeText}>Drag to roam</Text>
+          <Text style={styles.mapBadgeTitle}>{t('map.tapToPin')}</Text>
+          <Text style={styles.mapBadgeText}>{t('map.dragToRoam')}</Text>
         </View>
       </View>
 
@@ -169,14 +171,14 @@ export function PlaceMapPicker({
         <View accessibilityLiveRegion="polite" style={styles.failureCard}>
           <Ionicons color={stickerPalette.coral} name="cloud-offline-outline" size={24} />
           <View style={styles.failureCopy}>
-            <Text style={styles.failureTitle}>Map tiles took a detour</Text>
-            <Text style={styles.failureText}>Check your connection, or switch to search to keep planning.</Text>
+            <Text style={styles.failureTitle}>{t('map.failureTitle')}</Text>
+            <Text style={styles.failureText}>{t('map.failureText')}</Text>
           </View>
         </View>
       ) : null}
 
       <Pressable
-        accessibilityLabel="Zoom out to see the world"
+        accessibilityLabel={t('map.showWorld')}
         accessibilityRole="button"
         onPress={showWorld}
         style={({ pressed }) => [styles.worldButton, pressed && styles.pressed]}

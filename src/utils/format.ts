@@ -1,17 +1,9 @@
-const dateFormatter = new Intl.DateTimeFormat('en', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-
-const relativeFormatter =
-  typeof Intl.RelativeTimeFormat === 'function'
-    ? new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
-    : null;
-
 type RelativeTimeUnit = 'day' | 'hour' | 'minute' | 'second';
 
-function formatRelative(value: number, unit: RelativeTimeUnit): string {
+function formatRelative(value: number, unit: RelativeTimeUnit, locale: string): string {
+  const relativeFormatter = typeof Intl.RelativeTimeFormat === 'function'
+    ? new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+    : null;
   if (relativeFormatter) return relativeFormatter.format(value, unit);
 
   if (value === 0) return unit === 'second' ? 'now' : `this ${unit}`;
@@ -23,46 +15,51 @@ function formatRelative(value: number, unit: RelativeTimeUnit): string {
   return value < 0 ? `${amount} ${label} ago` : `in ${amount} ${label}`;
 }
 
-export function formatDate(value: string): string {
+export function formatDate(value: string, locale = 'en-US'): string {
   const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : dateFormatter.format(date);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
-export function formatDateRange(start: string, end: string): string {
-  return start === end ? formatDate(start) : `${formatDate(start)} – ${formatDate(end)}`;
+export function formatDateRange(start: string, end: string, locale = 'en-US'): string {
+  return start === end ? formatDate(start, locale) : `${formatDate(start, locale)} – ${formatDate(end, locale)}`;
 }
 
-export function formatTime(value: string): string {
+export function formatTime(value: string, locale = 'en-US'): string {
   const [hourPart = '0', minutePart = '00'] = value.split(':');
   const hour = Number(hourPart);
   if (Number.isNaN(hour)) return value;
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour % 12 || 12;
-  return `${displayHour}:${minutePart} ${suffix}`;
+  const date = new Date(2000, 0, 1, hour, Number(minutePart));
+  return new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    hour12: locale.startsWith('en'),
+    minute: '2-digit',
+  }).format(date);
 }
 
 export function formatDistance(meters: number): string {
   return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
 }
 
-export function formatDuration(seconds: number): string {
+export function formatDuration(seconds: number, locale = 'en-US'): string {
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return locale.startsWith('vi') ? `${minutes} phút` : `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
+  if (locale.startsWith('vi')) return remainder ? `${hours} giờ ${remainder} phút` : `${hours} giờ`;
   return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
 }
 
-export function relativeTime(value: string): string {
+export function relativeTime(value: string, locale = 'en-US'): string {
   const timestamp = new Date(value).getTime();
   if (Number.isNaN(timestamp)) return value;
 
   const deltaSeconds = Math.round((timestamp - Date.now()) / 1000);
   const absolute = Math.abs(deltaSeconds);
-  if (absolute < 60) return formatRelative(deltaSeconds, 'second');
-  if (absolute < 3600) return formatRelative(Math.round(deltaSeconds / 60), 'minute');
-  if (absolute < 86400) return formatRelative(Math.round(deltaSeconds / 3600), 'hour');
-  return formatRelative(Math.round(deltaSeconds / 86400), 'day');
+  if (absolute < 60) return formatRelative(deltaSeconds, 'second', locale);
+  if (absolute < 3600) return formatRelative(Math.round(deltaSeconds / 60), 'minute', locale);
+  if (absolute < 86400) return formatRelative(Math.round(deltaSeconds / 3600), 'hour', locale);
+  return formatRelative(Math.round(deltaSeconds / 86400), 'day', locale);
 }
 
 export function initials(name: string): string {

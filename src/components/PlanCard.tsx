@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { fontFamilies, radius, spacing, stickerPalette, stickerShadows, typography, type ThemeColors } from '../theme/tokens';
 import { useThemedStyles } from '../theme/useThemedStyles';
 import type { Plan } from '../types/api';
@@ -16,13 +17,14 @@ const statusColors: Record<Plan['status'], string> = {
 
 export function PlanCard({ plan, onPress }: { plan: Plan; onPress: () => void }) {
   const { colors, resolvedScheme } = useAppTheme();
+  const { locale, t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const statusColor = statusColors[plan.status];
   const usesStickerSurface = resolvedScheme === 'dark';
   const contentColor = usesStickerSurface ? colors.onSticker : colors.text;
   return (
     <Pressable
-      accessibilityLabel={`${plan.planName}. ${plan.status}. ${formatDateRange(plan.planStartDate, plan.planEndDate)}. Starts at ${formatTime(plan.planStartTime)}. ${plan.stops.length} ${plan.stops.length === 1 ? 'stop' : 'stops'}. Open itinerary.`}
+      accessibilityLabel={`${plan.planName}. ${t(`status.${plan.status}`)}. ${formatDateRange(plan.planStartDate, plan.planEndDate, locale)}. ${formatTime(plan.planStartTime, locale)}. ${t(plan.stops.length === 1 ? 'card.stop' : 'card.stops', { count: plan.stops.length })}. ${t('card.openItinerary')}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
@@ -36,13 +38,13 @@ export function PlanCard({ plan, onPress }: { plan: Plan; onPress: () => void })
       <View style={styles.topRow}>
         <View style={styles.statusBadge}>
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={styles.statusText}>{plan.status}</Text>
+          <Text style={styles.statusText}>{t(`status.${plan.status}`)}</Text>
         </View>
-        <Text style={[styles.date, usesStickerSurface && styles.copyMutedDark]}>{formatDateRange(plan.planStartDate, plan.planEndDate)}</Text>
+        <Text style={[styles.date, usesStickerSurface && styles.copyMutedDark]}>{formatDateRange(plan.planStartDate, plan.planEndDate, locale)}</Text>
       </View>
       <View style={styles.body}>
         <View style={styles.copy}>
-          <Text style={[styles.eyebrow, usesStickerSurface && styles.copyMutedDark]}>NEXT ADVENTURE</Text>
+          <Text style={[styles.eyebrow, usesStickerSurface && styles.copyMutedDark]}>{t('card.nextAdventure')}</Text>
           <Text numberOfLines={2} style={[styles.name, usesStickerSurface && styles.copyDark]}>{plan.planName}</Text>
           <Text numberOfLines={3} style={[styles.description, usesStickerSurface && styles.copyMutedDark]}>{plan.planDescription}</Text>
         </View>
@@ -59,11 +61,11 @@ export function PlanCard({ plan, onPress }: { plan: Plan; onPress: () => void })
       <View style={styles.footer}>
         <View style={styles.meta}>
           <Ionicons color={contentColor} name="location-outline" size={17} />
-          <Text style={[styles.metaText, usesStickerSurface && styles.copyDark]}>{plan.stops.length} {plan.stops.length === 1 ? 'stop' : 'stops'}</Text>
+          <Text style={[styles.metaText, usesStickerSurface && styles.copyDark]}>{t(plan.stops.length === 1 ? 'card.stop' : 'card.stops', { count: plan.stops.length })}</Text>
         </View>
         <View style={styles.meta}>
           <Ionicons color={contentColor} name="time-outline" size={17} />
-          <Text style={[styles.metaText, usesStickerSurface && styles.copyDark]}>{formatTime(plan.planStartTime)}</Text>
+          <Text style={[styles.metaText, usesStickerSurface && styles.copyDark]}>{formatTime(plan.planStartTime, locale)}</Text>
         </View>
         <View style={styles.arrowWell}>
           <Ionicons color={colors.onSticker} name="arrow-forward" size={18} />

@@ -13,6 +13,7 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { StateView } from '../../components/StateView';
 import { TravelGlobe3D } from '../../components/TravelGlobe3D';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
@@ -23,14 +24,9 @@ import { useThemedStyles } from '../../theme/useThemedStyles';
 import type { Group, Plan } from '../../types/api';
 import type { TabScreenProps } from '../../types/navigation';
 
-function safeErrorMessage(error: unknown): string {
-  return error instanceof TypeError
-    ? "We couldn't reach Starlyvia. Check your connection and try again."
-    : getErrorMessage(error);
-}
-
 export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const { user } = useAuth();
   const isFocused = useIsFocused();
@@ -64,13 +60,13 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
       if (unreadResult.status === 'fulfilled') {
         setUnreadCount(unreadResult.value.count);
       } else {
-        notices.push("Notifications couldn't refresh, so the unread count may be out of date.");
+        notices.push(t('home.notificationsWarning'));
       }
 
       if (groupsResult.status === 'rejected') {
-        setError(safeErrorMessage(groupsResult.reason));
+        setError(groupsResult.reason instanceof TypeError ? t('auth.connectionError') : getErrorMessage(groupsResult.reason));
         if (hasLoadedGroups.current) {
-          notices.unshift("Travel circles couldn't refresh. Your saved results are still shown.");
+          notices.unshift(t('home.groupsWarning'));
         }
         setWarning(notices.join(' '));
         return;
@@ -116,20 +112,22 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
       if (failedGroupIds.size) {
         notices.push(
           failedGroupIds.size === groupList.length
-            ? "Itineraries couldn't refresh. Saved results may be out of date."
-            : "Some itineraries couldn't refresh. Available and saved results are still shown.",
+            ? t('home.plansWarning')
+            : t('home.somePlansWarning'),
         );
       }
       setWarning(notices.length ? notices.join(' ') : null);
     } catch (loadError) {
-      if (requestId === loadRequestId.current) setError(safeErrorMessage(loadError));
+      if (requestId === loadRequestId.current) {
+        setError(loadError instanceof TypeError ? t('auth.connectionError') : getErrorMessage(loadError));
+      }
     } finally {
       if (requestId === loadRequestId.current) {
         setLoading(false);
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -144,7 +142,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
         loading
         presentation="screen"
         scene="itinerary"
-        title="Finding your next adventure…"
+        title={t('home.loading')}
       />
     );
   }
@@ -152,28 +150,31 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   if (error && !groups.length) {
     return (
       <StateView
-        actionLabel="Try again"
+        actionLabel={t('common.tryAgain')}
         icon="cloud-offline-outline"
         kind="error"
         message={error}
         onAction={() => void load()}
         presentation="screen"
-        title="Your travel world is taking a break"
+        title={t('home.offlineTitle')}
       />
     );
   }
 
-  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
+  const greeting = new Date().getHours() < 12
+    ? t('home.goodMorning')
+    : new Date().getHours() < 18 ? t('home.goodAfternoon') : t('home.goodEvening');
+  const explorerName = user?.username ?? t('common.explorer');
 
   return (
     <Screen onRefresh={() => void load(true)} refreshing={refreshing}>
       <View style={styles.header}>
         <View style={styles.greeting}>
           <Text style={styles.eyebrow}>{greeting}</Text>
-          <Text accessibilityRole="header" numberOfLines={2} style={styles.name}>{user?.username ?? 'Explorer'}</Text>
+          <Text accessibilityRole="header" numberOfLines={2} style={styles.name}>{explorerName}</Text>
         </View>
         <Pressable
-          accessibilityLabel={unreadCount > 0 ? `Open notifications, ${unreadCount} unread` : 'Open notifications'}
+          accessibilityLabel={unreadCount > 0 ? t('home.openNotificationsUnread', { count: unreadCount }) : t('home.openNotifications')}
           accessibilityRole="button"
           hitSlop={8}
           onPress={() => navigation.navigate('Notifications')}
@@ -182,19 +183,19 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
           <Ionicons color={colors.text} name="notifications-outline" size={23} />
           {unreadCount > 0 ? <View style={styles.notificationDot} /> : null}
         </Pressable>
-        <Avatar name={user?.username ?? 'Explorer'} size={46} uri={user?.avatarUrl} />
+        <Avatar name={explorerName} size={46} uri={user?.avatarUrl} />
       </View>
 
       {warning ? (
         <View accessibilityLiveRegion="polite" style={styles.warning}>
           <Ionicons color={colors.warningText} name="warning-outline" size={22} />
           <View style={styles.warningCopy}>
-            <Text style={styles.warningTitle}>A few updates are delayed</Text>
+            <Text style={styles.warningTitle}>{t('home.warningTitle')}</Text>
             <Text style={styles.warningText}>{warning}</Text>
           </View>
           <AppButton
             compact
-            label="Refresh"
+            label={t('common.refresh')}
             onPress={() => void load(true)}
             style={styles.warningAction}
             variant="ghost"
@@ -203,22 +204,22 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
       ) : null}
 
       <PlayfulHero
-        description="Gather your favorite people, then turn ideas into an itinerary."
-        title="Where will your crew go next?"
+        description={t('home.heroDescription')}
+        title={t('home.heroTitle')}
         visual={<TravelGlobe3D active={isFocused} />}
       >
         <AppButton
           compact
           icon="add"
-          label="Start a travel circle"
+          label={t('home.startCircle')}
           onPress={() => navigation.navigate('CreateGroup')}
           style={styles.heroAction}
         />
       </PlayfulHero>
 
-      <View accessibilityLabel="Quick actions" style={styles.quickActions}>
+      <View accessibilityLabel={t('home.quickActions')} style={styles.quickActions}>
         <Pressable
-          accessibilityLabel="Create a new travel circle"
+          accessibilityLabel={t('home.createCircleLabel')}
           accessibilityRole="button"
           onPress={() => navigation.navigate('CreateGroup')}
           style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
@@ -226,10 +227,10 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
           <View style={[styles.quickIcon, styles.quickIconOrange]}>
             <Ionicons color={colors.onPrimary} name="add" size={23} />
           </View>
-          <Text numberOfLines={2} style={styles.quickLabel}>New circle</Text>
+          <Text numberOfLines={2} style={styles.quickLabel}>{t('home.newCircle')}</Text>
         </Pressable>
         <Pressable
-          accessibilityLabel="Open travel invitations"
+          accessibilityLabel={t('home.openInvitations')}
           accessibilityRole="button"
           onPress={() => navigation.navigate('Invitations')}
           style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
@@ -237,10 +238,10 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
           <View style={[styles.quickIcon, styles.quickIconGreen]}>
             <Ionicons color={colors.accentText} name="ticket" size={22} />
           </View>
-          <Text numberOfLines={2} style={styles.quickLabel}>Invitations</Text>
+          <Text numberOfLines={2} style={styles.quickLabel}>{t('nav.invitations')}</Text>
         </Pressable>
         <Pressable
-          accessibilityLabel="Browse travel circles"
+          accessibilityLabel={t('home.browseCircles')}
           accessibilityRole="button"
           onPress={() => navigation.navigate('Groups')}
           style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
@@ -248,14 +249,14 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
           <View style={[styles.quickIcon, styles.quickIconDark]}>
             <Ionicons color={colors.heroText} name="compass" size={22} />
           </View>
-          <Text numberOfLines={2} style={styles.quickLabel}>Browse trips</Text>
+          <Text numberOfLines={2} style={styles.quickLabel}>{t('home.browseTrips')}</Text>
         </Pressable>
       </View>
 
       <SectionHeader
-        actionLabel="See all"
+        actionLabel={t('home.seeAll')}
         onAction={() => navigation.navigate('Groups')}
-        title="Your circles"
+        title={t('home.yourCircles')}
       />
       {groups.length ? (
         groups.slice(0, 2).map((group) => (
@@ -267,17 +268,17 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
         ))
       ) : (
         <StateView
-          actionLabel="Create your first group"
-          message="Bring friends or family together before building an itinerary."
+          actionLabel={t('home.createFirstGroup')}
+          message={t('home.noCirclesMessage')}
           onAction={() => navigation.navigate('CreateGroup')}
           scene="crew"
-          title="No travel circles yet"
+          title={t('home.noCirclesTitle')}
         />
       )}
 
       {groups.length ? (
         <>
-          <SectionHeader title="Coming up" />
+          <SectionHeader title={t('home.comingUp')} />
           {plans.length ? (
             plans.map((plan) => (
               <PlanCard
@@ -288,11 +289,11 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
             ))
           ) : (
             <StateView
-              actionLabel="Choose a travel circle"
-              message="Your upcoming itineraries will gather here once the first plan takes shape."
+              actionLabel={t('home.chooseCircle')}
+              message={t('home.noPlansMessage')}
               onAction={() => navigation.navigate('Groups')}
               scene="itinerary"
-              title="No adventures on the calendar"
+              title={t('home.noPlansTitle')}
             />
           )}
         </>

@@ -4,21 +4,23 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { StateView } from './src/components/StateView';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
 import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 function Application() {
   const { isRestoring } = useAuth();
   const { navigationTheme, statusBarStyle } = useAppTheme();
+  const { t } = useLanguage();
 
   if (isRestoring) {
     return (
       <StateView
         loading
-        message="Packing your travel universe…"
+        message={t('restore.message')}
         presentation="screen"
         scene="welcome"
-        title="Restoring your session"
+        title={t('restore.title')}
       />
     );
   }
@@ -35,9 +37,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AuthProvider>
-          <Application />
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <Application />
+          </AuthProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -9,6 +9,7 @@ import { GroupCard } from '../../components/GroupCard';
 import { ScreenIntro } from '../../components/ScreenIntro';
 import { StateView } from '../../components/StateView';
 import { TravelScene } from '../../components/TravelScene';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
@@ -19,6 +20,7 @@ import type { TabScreenProps } from '../../types/navigation';
 
 export function GroupsScreen({ navigation }: TabScreenProps<'Groups'>) {
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -64,19 +66,19 @@ export function GroupsScreen({ navigation }: TabScreenProps<'Groups'>) {
         kind="loading"
         loading
         presentation="screen"
-        title="Gathering your travel circles…"
+        title={t('groups.loading')}
       />
     );
   }
   if (groupsError && invitationsError && !groups.length) {
     return (
       <StateView
-        actionLabel="Try again"
+        actionLabel={t('common.tryAgain')}
         kind="error"
         message={groupsError}
         onAction={() => void load()}
         presentation="screen"
-        title="Could not load travel circles"
+        title={t('groups.loadError')}
       />
     );
   }
@@ -97,20 +99,20 @@ export function GroupsScreen({ navigation }: TabScreenProps<'Groups'>) {
         ListEmptyComponent={(
           groupsError ? (
             <StateView
-              actionLabel="Try again"
+              actionLabel={t('common.tryAgain')}
               kind="error"
               message={groupsError}
               onAction={() => void load()}
-              title="Travel circles are out of reach"
+              title={t('groups.outOfReach')}
             />
           ) : (
             <StateView
-              actionLabel="Create a group"
+              actionLabel={t('groups.create')}
               kind="empty"
-              message="Groups keep shared itineraries, members, and updates together."
+              message={t('groups.emptyMessage')}
               onAction={() => navigation.navigate('CreateGroup')}
               scene="crew"
-              title="Build your first circle"
+              title={t('groups.emptyTitle')}
             />
           )
         )}
@@ -118,27 +120,27 @@ export function GroupsScreen({ navigation }: TabScreenProps<'Groups'>) {
           <View style={styles.header}>
             <ScreenIntro
               scene="crew"
-              subtitle="The people you plan the good stuff with."
-              title="Travel circles"
+              subtitle={t('groups.subtitle')}
+              title={t('groups.title')}
             />
             <View style={styles.newGroupAction}>
-              <AppButton compact icon="add" label="New" onPress={() => navigation.navigate('CreateGroup')} />
+              <AppButton compact icon="add" label={t('common.new')} onPress={() => navigation.navigate('CreateGroup')} />
             </View>
 
             {invitationCount > 0 ? (
               <View style={styles.ticket}>
                 <TravelScene scene="invitation" size={82} style={styles.ticketScene} />
                 <View style={styles.ticketCopy}>
-                  <Text style={styles.ticketEyebrow}>A TRIP IS CALLING</Text>
+                  <Text style={styles.ticketEyebrow}>{t('groups.tripCalling')}</Text>
                   <Text style={styles.ticketTitle}>
-                    {invitationCount} pending {invitationCount === 1 ? 'invitation' : 'invitations'}
+                    {t(invitationCount === 1 ? 'groups.pendingInvitation' : 'groups.pendingInvitations', { count: invitationCount })}
                   </Text>
-                  <Text style={styles.ticketMessage}>See who wants you in their travel circle.</Text>
+                  <Text style={styles.ticketMessage}>{t('groups.invitationMessage')}</Text>
                 </View>
                 <AppButton
                   compact
                   icon="mail-unread-outline"
-                  label="Open"
+                  label={t('common.open')}
                   onPress={() => navigation.navigate('Invitations')}
                   variant="secondary"
                 />
@@ -147,7 +149,7 @@ export function GroupsScreen({ navigation }: TabScreenProps<'Groups'>) {
 
             {invitationsError || (groupsError && groups.length > 0) ? (
               <View accessibilityLiveRegion="polite" style={styles.warning}>
-                <Text style={styles.warningTitle}>Some updates could not be refreshed</Text>
+                <Text style={styles.warningTitle}>{t('groups.refreshWarning')}</Text>
                 <Text style={styles.warningMessage}>{invitationsError ?? groupsError}</Text>
               </View>
             ) : null}

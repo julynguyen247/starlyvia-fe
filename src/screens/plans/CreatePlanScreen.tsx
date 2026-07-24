@@ -8,6 +8,7 @@ import { Chip } from '../../components/Chip';
 import { ResponsiveFieldRow } from '../../components/ResponsiveFieldRow';
 import { Screen } from '../../components/Screen';
 import { ScreenIntro } from '../../components/ScreenIntro';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { planService } from '../../services/planService';
@@ -28,6 +29,7 @@ function today(): string {
 
 export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreatePlan'>) {
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const { groupId, groupName } = route.params;
   const [name, setName] = useState('');
@@ -42,12 +44,12 @@ export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreateP
 
   async function submit() {
     const nextErrors: Errors = {
-      name: !name.trim() ? 'Name the itinerary.' : undefined,
-      description: !description.trim() ? 'Add a short description.' : undefined,
-      startDate: !isIsoDate(startDate) ? 'Use YYYY-MM-DD.' : undefined,
-      endDate: !isIsoDate(endDate) || endDate < startDate ? 'Use a date on or after the start.' : undefined,
-      startTime: !isTime(startTime) ? 'Use 24-hour HH:mm.' : undefined,
-      endTime: !isTime(endTime) || (startDate === endDate && endTime <= startTime) ? 'Use a time after the start.' : undefined,
+      name: !name.trim() ? t('createPlan.nameError') : undefined,
+      description: !description.trim() ? t('createPlan.descriptionError') : undefined,
+      startDate: !isIsoDate(startDate) ? t('createPlan.dateError') : undefined,
+      endDate: !isIsoDate(endDate) || endDate < startDate ? t('createPlan.endDateError') : undefined,
+      startTime: !isTime(startTime) ? t('createPlan.timeError') : undefined,
+      endTime: !isTime(endTime) || (startDate === endDate && endTime <= startTime) ? t('createPlan.endTimeError') : undefined,
     };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
@@ -67,7 +69,7 @@ export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreateP
       });
       navigation.replace('PlanDetail', { planId: plan.id });
     } catch (error) {
-      Alert.alert('Could not create itinerary', getErrorMessage(error));
+      Alert.alert(t('createPlan.submitError'), getErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -75,7 +77,7 @@ export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreateP
 
   return (
     <Screen safeTop={false}>
-      <View accessibilityLabel={`Planning with ${groupName}`} accessible style={styles.groupTicket}>
+      <View accessibilityLabel={t('createPlan.planningWith', { name: groupName })} accessible style={styles.groupTicket}>
         <View
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
@@ -84,54 +86,54 @@ export function CreatePlanScreen({ navigation, route }: RootScreenProps<'CreateP
           <Ionicons color={colors.accent} name="ticket-outline" size={20} />
         </View>
         <View style={styles.ticketCopy}>
-          <Text style={styles.ticketEyebrow}>TRAVEL CIRCLE</Text>
+          <Text style={styles.ticketEyebrow}>{t('card.travelCircle')}</Text>
           <Text style={styles.ticketName}>{groupName}</Text>
         </View>
       </View>
       <ScreenIntro
         scene="itinerary"
-        subtitle="Start with the when and why. Add places after saving."
-        title="Shape the next adventure."
+        subtitle={t('createPlan.subtitle')}
+        title={t('createPlan.title')}
       />
       <View style={styles.formCard}>
         <View style={styles.sectionHeading}>
           <Ionicons color={colors.primary} name="sparkles-outline" size={19} />
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Trip basics</Text>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{t('createPlan.basics')}</Text>
         </View>
-        <AppInput editable={!submitting} error={errors.name} label="Itinerary name" maxLength={100} onChangeText={setName} placeholder="A day in Da Nang" value={name} />
-        <AppInput editable={!submitting} error={errors.description} label="Description" maxLength={500} multiline onChangeText={setDescription} placeholder="Beaches, food, and a little room to wander." value={description} />
+        <AppInput editable={!submitting} error={errors.name} label={t('createPlan.name')} maxLength={100} onChangeText={setName} placeholder={t('createPlan.namePlaceholder')} value={name} />
+        <AppInput editable={!submitting} error={errors.description} label={t('createPlan.description')} maxLength={500} multiline onChangeText={setDescription} placeholder={t('createPlan.descriptionPlaceholder')} value={description} />
       </View>
 
       <View style={styles.formCard}>
         <View style={styles.sectionHeading}>
           <Ionicons color={colors.primary} name="calendar-outline" size={19} />
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Dates and times</Text>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{t('createPlan.dates')}</Text>
         </View>
         <ResponsiveFieldRow>
-          <AppInput editable={!submitting} error={errors.startDate} keyboardType="numbers-and-punctuation" label="Start date" onChangeText={setStartDate} placeholder="YYYY-MM-DD" value={startDate} />
-          <AppInput editable={!submitting} error={errors.endDate} keyboardType="numbers-and-punctuation" label="End date" onChangeText={setEndDate} placeholder="YYYY-MM-DD" value={endDate} />
+          <AppInput editable={!submitting} error={errors.startDate} keyboardType="numbers-and-punctuation" label={t('createPlan.startDate')} onChangeText={setStartDate} placeholder="YYYY-MM-DD" value={startDate} />
+          <AppInput editable={!submitting} error={errors.endDate} keyboardType="numbers-and-punctuation" label={t('createPlan.endDate')} onChangeText={setEndDate} placeholder="YYYY-MM-DD" value={endDate} />
         </ResponsiveFieldRow>
         <ResponsiveFieldRow>
-          <AppInput editable={!submitting} error={errors.startTime} keyboardType="numbers-and-punctuation" label="Start time" onChangeText={setStartTime} placeholder="09:00" value={startTime} />
-          <AppInput editable={!submitting} error={errors.endTime} keyboardType="numbers-and-punctuation" label="End time" onChangeText={setEndTime} placeholder="18:00" value={endTime} />
+          <AppInput editable={!submitting} error={errors.startTime} keyboardType="numbers-and-punctuation" label={t('createPlan.startTime')} onChangeText={setStartTime} placeholder="09:00" value={startTime} />
+          <AppInput editable={!submitting} error={errors.endTime} keyboardType="numbers-and-punctuation" label={t('createPlan.endTime')} onChangeText={setEndTime} placeholder="18:00" value={endTime} />
         </ResponsiveFieldRow>
       </View>
 
       <View style={styles.formCard}>
         <View style={styles.sectionHeading}>
           <Ionicons color={colors.primary} name="flag-outline" size={19} />
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Ready when you are</Text>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{t('createPlan.ready')}</Text>
         </View>
-        <Text style={styles.sectionCopy}>Keep it flexible as a draft, or let the group know the plan is ready.</Text>
+        <Text style={styles.sectionCopy}>{t('createPlan.readyCopy')}</Text>
         <View style={styles.statusField}>
-          <Text style={styles.label}>Plan status</Text>
+          <Text style={styles.label}>{t('createPlan.status')}</Text>
           <View style={styles.chips}>
-            <Chip label="Draft" onPress={() => setStatus('DRAFT')} selected={status === 'DRAFT'} />
-            <Chip label="Ready to go" onPress={() => setStatus('PLANNED')} selected={status === 'PLANNED'} />
+            <Chip label={t('createPlan.draft')} onPress={() => setStatus('DRAFT')} selected={status === 'DRAFT'} />
+            <Chip label={t('createPlan.planned')} onPress={() => setStatus('PLANNED')} selected={status === 'PLANNED'} />
           </View>
         </View>
       </View>
-      <AppButton label="Save and add places" loading={submitting} onPress={() => void submit()} />
+      <AppButton label={t('createPlan.save')} loading={submitting} onPress={() => void submit()} />
     </Screen>
   );
 }

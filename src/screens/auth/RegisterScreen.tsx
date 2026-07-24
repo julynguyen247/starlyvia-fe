@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { spacing, typography, type ThemeColors } from '../../theme/tokens';
 import { useThemedStyles } from '../../theme/useThemedStyles';
@@ -14,6 +16,8 @@ import { AuthShell } from './AuthShell';
 type Errors = { username?: string; email?: string; password?: string };
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
+  const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const { register, isSubmitting } = useAuth();
   const emailRef = useRef<TextInput>(null);
@@ -29,9 +33,9 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
 
     setRequestError(null);
     const nextErrors: Errors = {
-      username: username.trim().length < 2 ? 'Use at least 2 characters.' : undefined,
-      email: !isEmail(email) ? 'Enter a valid email address.' : undefined,
-      password: password.length < 8 ? 'Use at least 8 characters.' : undefined,
+      username: username.trim().length < 2 ? t('auth.nameTooShort') : undefined,
+      email: !isEmail(email) ? t('auth.invalidEmail') : undefined,
+      password: password.length < 8 ? t('auth.passwordTooShort') : undefined,
     };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
@@ -45,7 +49,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     } catch (error) {
       setRequestError(
         error instanceof TypeError
-          ? "We couldn't reach Starlyvia. Check your connection and try again."
+          ? t('auth.connectionError')
           : getErrorMessage(error),
       );
     }
@@ -54,21 +58,21 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
   return (
     <AuthShell
       requestError={requestError}
-      title="Your next story starts here."
-      subtitle="Create an account and bring the right people along."
+      title={t('register.title')}
+      subtitle={t('register.subtitle')}
     >
       <AppInput
         autoCapitalize="words"
         autoComplete="name"
         error={errors.username}
         icon="person-outline"
-        label="Name"
+        label={t('auth.name')}
         onChangeText={(value) => {
           setUsername(value);
           setRequestError(null);
         }}
         onSubmitEditing={() => emailRef.current?.focus()}
-        placeholder="How friends know you"
+        placeholder={t('auth.namePlaceholder')}
         returnKeyType="next"
         value={username}
       />
@@ -79,13 +83,13 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         error={errors.email}
         icon="mail-outline"
         keyboardType="email-address"
-        label="Email"
+        label={t('auth.email')}
         onChangeText={(value) => {
           setEmail(value);
           setRequestError(null);
         }}
         onSubmitEditing={() => passwordRef.current?.focus()}
-        placeholder="you@example.com"
+        placeholder={t('auth.emailPlaceholder')}
         returnKeyType="next"
         value={email}
       />
@@ -94,22 +98,22 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         autoComplete="new-password"
         error={errors.password}
         icon="lock-closed-outline"
-        label="Password"
+        label={t('auth.password')}
         onChangeText={(value) => {
           setPassword(value);
           setRequestError(null);
         }}
         onSubmitEditing={() => void submit()}
-        placeholder="At least 8 characters"
+        placeholder={t('auth.newPasswordPlaceholder')}
         returnKeyType="done"
         secureTextEntry
         value={password}
       />
-      <AppButton label="Create account" loading={isSubmitting} onPress={() => void submit()} />
+      <AppButton label={t('register.action')} loading={isSubmitting} onPress={() => void submit()} />
       <View style={styles.prompt}>
-        <Text style={styles.promptText}>Already have an account?</Text>
+        <Text style={styles.promptText}>{t('register.existing')}</Text>
         <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.linkButton}>
-          <Text style={styles.link}>Sign in</Text>
+          <Text style={styles.link}>{t('register.signIn')}</Text>
         </Pressable>
       </View>
     </AuthShell>
@@ -118,9 +122,9 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-  link: { color: colors.primaryText, fontSize: typography.small, fontWeight: '800' },
-  linkButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44 },
-  prompt: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },
-  promptText: { color: colors.textMuted, fontSize: typography.small },
+    link: { color: colors.primaryText, fontSize: typography.small, fontWeight: '800' },
+    linkButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44 },
+    prompt: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },
+    promptText: { color: colors.textMuted, fontSize: typography.small },
   });
 }

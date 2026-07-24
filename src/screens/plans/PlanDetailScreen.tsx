@@ -9,7 +9,9 @@ import { PlayfulHero } from '../../components/PlayfulHero';
 import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
 import { StateView } from '../../components/StateView';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import type { MessageKey } from '../../i18n/messages';
 import { ApiError, getErrorMessage } from '../../services/apiClient';
 import { planService } from '../../services/planService';
 import { radius, shadows, spacing, typography, type ThemeColors } from '../../theme/tokens';
@@ -24,39 +26,33 @@ const modeIcons: Record<TravelMode, keyof typeof Ionicons.glyphMap> = {
   BICYCLE: 'bicycle-outline',
 };
 
-const modeLabels: Record<TravelMode, string> = {
-  DRIVE: 'Drive',
-  WALK: 'Walk',
-  BICYCLE: 'Bicycle',
-};
-
 type RouteIssue = {
   icon: keyof typeof Ionicons.glyphMap;
   message: string;
   title: string;
 };
 
-function getRouteIssue(error: unknown): RouteIssue {
+function getRouteIssue(error: unknown, t: (key: MessageKey) => string): RouteIssue {
   if (error instanceof ApiError) {
     if (error.status === 422) {
       return {
         icon: 'trail-sign-outline',
-        message: 'Check that every stop was matched from place search, or try another travel mode.',
-        title: 'These stops cannot be routed yet',
+        message: t('plan.routeUnmatchedMessage'),
+        title: t('plan.routeUnmatchedTitle'),
       };
     }
     if (error.status === 429) {
       return {
         icon: 'hourglass-outline',
-        message: 'The routing provider has reached its current limit. Wait a moment, then try again.',
-        title: 'Route limit reached',
+        message: t('plan.routeLimitMessage'),
+        title: t('plan.routeLimitTitle'),
       };
     }
     if (error.status === 503) {
       return {
         icon: 'cloud-offline-outline',
-        message: 'Your itinerary is safe. Routing is temporarily unavailable, so please try again later.',
-        title: 'Routing is unavailable',
+        message: t('plan.routeUnavailableMessage'),
+        title: t('plan.routeUnavailableTitle'),
       };
     }
   }
@@ -64,12 +60,13 @@ function getRouteIssue(error: unknown): RouteIssue {
   return {
     icon: 'alert-circle-outline',
     message: getErrorMessage(error),
-    title: 'Could not calculate this route',
+    title: t('plan.routeErrorTitle'),
   };
 }
 
 export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDetail'>) {
   const { colors } = useAppTheme();
+  const { locale, t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const { planId } = route.params;
   const loadRequestId = useRef(0);
@@ -135,7 +132,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
     } catch (computeError) {
       if (requestId !== routeRequestId.current) return;
       setRouteSummary(null);
-      setRouteIssue(getRouteIssue(computeError));
+      setRouteIssue(getRouteIssue(computeError, t));
     } finally {
       if (requestId === routeRequestId.current) setRouting(false);
     }
@@ -143,10 +140,10 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
 
   function confirmDeleteStop(stop: PlanStop) {
     if (routing || refreshing || deletingStopId || deletingPlan) return;
-    Alert.alert('Remove this stop?', stop.name, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('plan.removeStopTitle'), stop.name, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('plan.remove'),
         style: 'destructive',
         onPress: async () => {
           setDeletingStopId(stop.id);
@@ -158,7 +155,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
             setRouteSummary(null);
             setRouteIssue(null);
           } catch (deleteError) {
-            Alert.alert('Could not remove stop', getErrorMessage(deleteError));
+            Alert.alert(t('plan.removeStopError'), getErrorMessage(deleteError));
           } finally {
             setDeletingStopId(null);
           }
@@ -169,10 +166,10 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
 
   function confirmDeletePlan() {
     if (routing || refreshing || deletingPlan || deletingStopId) return;
-    Alert.alert('Delete this itinerary?', 'This also removes every stop and cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('plan.deleteTitle'), t('plan.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('plan.delete'),
         style: 'destructive',
         onPress: async () => {
           setDeletingPlan(true);
@@ -180,7 +177,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
             await planService.delete(planId);
             navigation.goBack();
           } catch (deleteError) {
-            Alert.alert('Could not delete itinerary', getErrorMessage(deleteError));
+            Alert.alert(t('plan.deleteError'), getErrorMessage(deleteError));
             setDeletingPlan(false);
           }
         },
@@ -188,17 +185,17 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
     ]);
   }
 
-  if (loading) return <StateView loading presentation="screen" scene="itinerary" title="Opening itinerary…" />;
+  if (loading) return <StateView loading presentation="screen" scene="itinerary" title={t('plan.opening')} />;
   if (!plan) {
     return (
       <StateView
-        actionLabel="Try again"
+        actionLabel={t('common.tryAgain')}
         kind="error"
         message={error ?? undefined}
         onAction={() => void load()}
         presentation="screen"
         scene="itinerary"
-        title="Could not open itinerary"
+        title={t('plan.openError')}
       />
     );
   }
@@ -216,7 +213,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
       safeTop={false}
     >
       <PlayfulHero
-        badge={<Chip label={plan.status} tone={plan.status === 'COMPLETED' ? 'success' : plan.status === 'CANCELLED' ? 'danger' : 'warning'} />}
+        badge={<Chip label={t(`status.${plan.status}`)} tone={plan.status === 'COMPLETED' ? 'success' : plan.status === 'CANCELLED' ? 'danger' : 'warning'} />}
         description={plan.planDescription}
         scene="itinerary"
         title={plan.planName}
@@ -224,11 +221,11 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
         <View style={styles.heroDetails}>
           <View style={styles.heroMeta}>
             <Ionicons color={colors.heroTextSubtle} name="calendar-outline" size={18} />
-            <Text style={styles.heroMetaText}>{formatDateRange(plan.planStartDate, plan.planEndDate)}</Text>
+            <Text style={styles.heroMetaText}>{formatDateRange(plan.planStartDate, plan.planEndDate, locale)}</Text>
           </View>
           <View style={styles.heroMeta}>
             <Ionicons color={colors.heroTextSubtle} name="time-outline" size={18} />
-            <Text style={styles.heroMetaText}>{formatTime(plan.planStartTime)} – {formatTime(plan.planEndTime)}</Text>
+            <Text style={styles.heroMetaText}>{formatTime(plan.planStartTime, locale)} – {formatTime(plan.planEndTime, locale)}</Text>
           </View>
         </View>
       </PlayfulHero>
@@ -237,13 +234,13 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
         <View accessibilityLiveRegion="polite" style={styles.refreshWarning}>
           <Ionicons color={colors.warning} name="refresh-circle-outline" size={22} />
           <View style={styles.warningCopy}>
-            <Text style={styles.warningTitle}>Showing the last itinerary</Text>
+            <Text style={styles.warningTitle}>{t('plan.showingSaved')}</Text>
             <Text style={styles.warningText}>{error}</Text>
           </View>
           <AppButton
             compact
             disabled={routing || refreshing || deletingStopId !== null || deletingPlan}
-            label="Retry"
+            label={t('plan.retry')}
             onPress={() => void load(true)}
             variant="ghost"
           />
@@ -251,7 +248,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
       ) : null}
 
       <View style={styles.section}>
-        <SectionHeader title={`Adventure route · ${orderedStops.length}`} />
+        <SectionHeader title={t('plan.routeCount', { count: orderedStops.length })} />
         {orderedStops.map((stop, index) => (
           <View key={stop.id} style={styles.stopRow}>
             <View style={styles.timelineColumn}>
@@ -266,11 +263,11 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
                   <Ionicons color={colors.primary} name="location" size={18} />
                 </View>
                 <View style={styles.stopCopy}>
-                  <Text style={styles.stopTime}>{formatTime(stop.arrivalTime)} – {formatTime(stop.departureTime)}</Text>
+                  <Text style={styles.stopTime}>{formatTime(stop.arrivalTime, locale)} – {formatTime(stop.departureTime, locale)}</Text>
                   <Text style={styles.stopName}>{stop.name}</Text>
                 </View>
                 <Pressable
-                  accessibilityLabel={`Remove ${stop.name}`}
+                  accessibilityLabel={t('plan.removeStopLabel', { name: stop.name })}
                   accessibilityRole="button"
                   accessibilityState={{ busy: deletingStopId === stop.id, disabled: routing || refreshing || deletingStopId !== null || deletingPlan }}
                   disabled={routing || refreshing || deletingStopId !== null || deletingPlan}
@@ -298,15 +295,15 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
         {!orderedStops.length ? (
           <StateView
             kind="empty"
-            message="Add at least two map-matched places to calculate a route."
+            message={t('plan.emptyRouteMessage')}
             scene="itinerary"
-            title="Build the day, one place at a time"
+            title={t('plan.emptyRouteTitle')}
           />
         ) : null}
         <AppButton
           disabled={routing || refreshing || deletingPlan || deletingStopId !== null}
           icon="add"
-          label="Add a place"
+          label={t('plan.addPlace')}
           onPress={() => navigation.navigate('AddStop', { planId, nextOrderIndex })}
           variant="secondary"
         />
@@ -319,14 +316,14 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
               <Ionicons color={colors.primary} name="navigate" size={22} />
             </View>
             <View style={styles.routeHeadingCopy}>
-              <SectionHeader title="How should we go?" />
-              <Text style={styles.routeIntro}>Pick a travel mode, then connect the stops.</Text>
+              <SectionHeader title={t('plan.routeTitle')} />
+              <Text style={styles.routeIntro}>{t('plan.routeIntro')}</Text>
             </View>
           </View>
-          <View accessibilityLabel="Travel mode" style={styles.modes}>
+          <View accessibilityLabel={t('plan.travelMode')} style={styles.modes}>
             {(['DRIVE', 'WALK', 'BICYCLE'] as TravelMode[]).map((travelMode) => (
               <Pressable
-                accessibilityLabel={`${modeLabels[travelMode]} route`}
+                accessibilityLabel={t('plan.modeRoute', { mode: t(`plan.mode.${travelMode}`) })}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: routing || refreshing || deletingStopId !== null || deletingPlan, selected: mode === travelMode }}
                 disabled={routing || refreshing || deletingStopId !== null || deletingPlan}
@@ -340,7 +337,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
                 ]}
               >
                 <Ionicons color={mode === travelMode ? colors.onPrimary : colors.textMuted} name={modeIcons[travelMode]} size={20} />
-                <Text style={[styles.modeText, mode === travelMode && styles.modeTextSelected]}>{modeLabels[travelMode]}</Text>
+                <Text style={[styles.modeText, mode === travelMode && styles.modeTextSelected]}>{t(`plan.mode.${travelMode}`)}</Text>
                 {mode === travelMode ? <Ionicons color={colors.onPrimary} name="checkmark-circle" size={17} /> : null}
               </Pressable>
             ))}
@@ -349,7 +346,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
           {!routeSummary && !routeIssue ? (
             <AppButton
               disabled={refreshing || deletingStopId !== null || deletingPlan}
-              label="Calculate route"
+              label={t('plan.calculateRoute')}
               loading={routing}
               onPress={() => void computeRoute()}
             />
@@ -367,7 +364,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
               <AppButton
                 compact
                 disabled={refreshing || deletingStopId !== null || deletingPlan}
-                label="Try again"
+                label={t('common.tryAgain')}
                 loading={routing}
                 onPress={() => void computeRoute()}
                 variant="ghost"
@@ -377,22 +374,22 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
 
           {routeSummary ? (
             <View
-              accessibilityLabel={`Route ready. ${formatDistance(routeSummary.distanceMeters)} total distance. ${formatDuration(routeSummary.durationSeconds)} travel time.`}
+              accessibilityLabel={t('plan.routeReadyLabel', { distance: formatDistance(routeSummary.distanceMeters), duration: formatDuration(routeSummary.durationSeconds, locale) })}
               accessibilityLiveRegion="polite"
               style={styles.routeSummary}
             >
               <View style={styles.routeReady}>
                 <Ionicons color={colors.success} name="checkmark-circle" size={22} />
-                <Text style={styles.routeReadyText}>{modeLabels[routeSummary.travelMode]} route ready</Text>
+                <Text style={styles.routeReadyText}>{t('plan.routeReady', { mode: t(`plan.mode.${routeSummary.travelMode}`) })}</Text>
               </View>
               <View style={styles.routeMetrics}>
                 <View style={styles.routeMetric}>
                   <Text style={styles.routeMetricValue}>{formatDistance(routeSummary.distanceMeters)}</Text>
-                  <Text style={styles.routeMetricLabel}>total distance</Text>
+                  <Text style={styles.routeMetricLabel}>{t('plan.totalDistance')}</Text>
                 </View>
                 <View style={styles.routeMetric}>
-                  <Text style={styles.routeMetricValue}>{formatDuration(routeSummary.durationSeconds)}</Text>
-                  <Text style={styles.routeMetricLabel}>travel time</Text>
+                  <Text style={styles.routeMetricValue}>{formatDuration(routeSummary.durationSeconds, locale)}</Text>
+                  <Text style={styles.routeMetricLabel}>{t('plan.travelTime')}</Text>
                 </View>
               </View>
             </View>
@@ -402,7 +399,7 @@ export function PlanDetailScreen({ navigation, route }: RootScreenProps<'PlanDet
 
       <AppButton
         disabled={routing || refreshing || deletingStopId !== null}
-        label="Delete itinerary"
+        label={t('plan.deleteAction')}
         loading={deletingPlan}
         onPress={confirmDeletePlan}
         variant="danger"

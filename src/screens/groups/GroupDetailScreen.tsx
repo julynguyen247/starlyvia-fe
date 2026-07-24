@@ -14,6 +14,7 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { StateView } from '../../components/StateView';
 import { TravelScene } from '../../components/TravelScene';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getErrorMessage } from '../../services/apiClient';
 import { groupService } from '../../services/groupService';
@@ -40,21 +41,23 @@ type InlineLoadNoticeProps = {
 
 function InlineLoadNotice({ message, onRetry }: InlineLoadNoticeProps) {
   const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   return (
     <View accessibilityLiveRegion="polite" style={styles.loadNotice}>
       <Ionicons color={colors.warningText} name="cloud-offline-outline" size={22} />
       <View style={styles.loadNoticeCopy}>
-        <Text style={styles.loadNoticeTitle}>This section could not be refreshed</Text>
+        <Text style={styles.loadNoticeTitle}>{t('groupDetail.sectionError')}</Text>
         <Text style={styles.loadNoticeMessage}>{message}</Text>
       </View>
-      <AppButton compact label="Retry" onPress={onRetry} variant="ghost" />
+      <AppButton compact label={t('plan.retry')} onPress={onRetry} variant="ghost" />
     </View>
   );
 }
 
 export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupDetail'>) {
   const { colors } = useAppTheme();
+  const { locale, t } = useLanguage();
   const styles = useThemedStyles(createStyles);
   const { user } = useAuth();
   const { groupId } = route.params;
@@ -121,7 +124,7 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
   async function invite() {
     const value = inviteeId.trim();
     if (!uuidPattern.test(value)) {
-      setInviteError('Enter the full UUID of the person you want to invite.');
+      setInviteError(t('groupDetail.uuidError'));
       setInviteSuccess(undefined);
       return;
     }
@@ -132,7 +135,7 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
     try {
       await groupService.invite(groupId, value);
       setInviteeId('');
-      setInviteSuccess('Invitation sent. They will see it in their invitations.');
+      setInviteSuccess(t('groupDetail.inviteSuccess'));
     } catch (inviteFailure) {
       setInviteError(getErrorMessage(inviteFailure));
     } finally {
@@ -144,13 +147,13 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
     if (inviting || removingMemberId) return;
 
     const memberName = member.userId === user?.userId
-      ? (user?.username ?? 'your account')
-      : `Traveler ${member.userId.slice(0, 8)}`;
+      ? (user?.username ?? t('groupDetail.yourAccount'))
+      : t('groupDetail.traveler', { id: member.userId.slice(0, 8) });
 
-    Alert.alert('Remove traveler?', `This removes ${memberName} from the travel circle.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('groupDetail.removeTitle'), t('groupDetail.removeMessage', { name: memberName }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('plan.remove'),
         style: 'destructive',
         onPress: async () => {
           setRemovingMemberId(member.id);
@@ -158,7 +161,7 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
             await groupService.removeMember(groupId, member.userId);
             setMembers((current) => current.filter((item) => item.id !== member.id));
           } catch (removeError) {
-            Alert.alert('Could not remove traveler', getErrorMessage(removeError));
+            Alert.alert(t('groupDetail.removeError'), getErrorMessage(removeError));
           } finally {
             setRemovingMemberId(null);
           }
@@ -173,19 +176,19 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
         kind="loading"
         loading
         presentation="screen"
-        title="Opening travel circle…"
+        title={t('groupDetail.opening')}
       />
     );
   }
   if (!group) {
     return (
       <StateView
-        actionLabel="Try again"
+        actionLabel={t('common.tryAgain')}
         kind="error"
         message={groupError ?? undefined}
         onAction={() => void load()}
         presentation="screen"
-        title="Could not open group"
+        title={t('groupDetail.openError')}
       />
     );
   }
@@ -197,24 +200,24 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
   return (
     <Screen onRefresh={() => void load(true)} refreshing={refreshing} safeTop={false}>
       <PlayfulHero
-        badge={<Chip label={group.type.replace('_', ' ')} />}
-        description={group.description || 'A shared space for the next adventure.'}
-        eyebrow="YOUR TRAVEL CREW"
+        badge={<Chip label={t(`group.${group.type}`)} />}
+        description={group.description || t('groupDetail.defaultDescription')}
+        eyebrow={t('groupDetail.eyebrow')}
         scene="crew"
         title={group.name}
       >
         <Text style={styles.created}>
-          Together since {formatDate(group.createdAt.slice(0, 10))}
+          {t('groupDetail.togetherSince', { date: formatDate(group.createdAt.slice(0, 10), locale) })}
         </Text>
       </PlayfulHero>
 
       {groupError ? <InlineLoadNotice message={groupError} onRetry={() => void load()} /> : null}
 
       <View style={styles.sectionGap}>
-        <SectionHeader title="Itineraries" />
+        <SectionHeader title={t('groupDetail.itineraries')} />
         <AppButton
           icon="add"
-          label="Plan a trip"
+          label={t('groupDetail.planTrip')}
           onPress={() => navigation.navigate('CreatePlan', { groupId, groupName: group.name })}
         />
         {plansError ? <InlineLoadNotice message={plansError} onRetry={() => void load()} /> : null}
@@ -228,21 +231,21 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
           <View style={styles.emptyItinerary}>
             <StateView
               kind="empty"
-              message="Turn the group's ideas into a route everyone can look forward to."
+              message={t('groupDetail.emptyMessage')}
               scene="itinerary"
-              title="Your first itinerary starts here"
+              title={t('groupDetail.emptyTitle')}
             />
           </View>
         ) : null}
       </View>
 
       <View style={styles.sectionGap}>
-        <SectionHeader title={membersError && !members.length ? 'Travelers' : `Travelers · ${members.length}`} />
+        <SectionHeader title={membersError && !members.length ? t('groupDetail.travelers') : t('groupDetail.travelersCount', { count: members.length })} />
         {membersError ? <InlineLoadNotice message={membersError} onRetry={() => void load()} /> : null}
         {members.map((member) => {
           const memberName = member.userId === user?.userId
-            ? (user.username || 'You')
-            : `Traveler ${member.userId.slice(0, 8)}`;
+            ? (user.username || t('groupDetail.you'))
+            : t('groupDetail.traveler', { id: member.userId.slice(0, 8) });
           const canRemove = canManage
             && member.role !== 'OWNER'
             && member.userId !== user?.userId;
@@ -257,10 +260,10 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
                 </View>
               </View>
               <View style={styles.memberMeta}>
-                <Chip label={member.role} />
+                <Chip label={t(`role.${member.role}`)} />
                 {canRemove ? (
                   <Pressable
-                    accessibilityLabel={`Remove ${memberName} from travel circle`}
+                    accessibilityLabel={t('groupDetail.removeLabel', { name: memberName })}
                     accessibilityRole="button"
                     accessibilityState={{ busy: removingMemberId === member.id, disabled: mutationBusy }}
                     disabled={mutationBusy}
@@ -289,10 +292,10 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
           <View style={styles.inviteHeader}>
             <TravelScene scene="invitation" size={96} style={styles.inviteScene} />
             <View style={styles.inviteHeaderCopy}>
-              <Text style={styles.inviteEyebrow}>PASS IT ON</Text>
-              <Text style={styles.inviteTitle}>Invite another traveler</Text>
+              <Text style={styles.inviteEyebrow}>{t('groupDetail.passItOn')}</Text>
+              <Text style={styles.inviteTitle}>{t('groupDetail.inviteTitle')}</Text>
               <Text style={styles.inviteCopy}>
-                Paste their user UUID to send a ticket into this circle. User search is not available yet.
+                {t('groupDetail.inviteCopy')}
               </Text>
             </View>
           </View>
@@ -302,7 +305,7 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
             editable={!mutationBusy}
             error={inviteError}
             icon="person-add-outline"
-            label="User ID"
+            label={t('groupDetail.userId')}
             onChangeText={(value) => {
               setInviteeId(value);
               setInviteError(undefined);
@@ -320,7 +323,7 @@ export function GroupDetailScreen({ navigation, route }: RootScreenProps<'GroupD
           <AppButton
             disabled={removingMemberId !== null}
             icon="paper-plane-outline"
-            label="Send invitation"
+            label={t('groupDetail.send')}
             loading={inviting}
             onPress={() => void invite()}
             variant="secondary"
